@@ -1,0 +1,46 @@
+services:
+  server:
+    build:
+      context: "."
+    restart: always
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+      - ./logs:/var/log
+    ports:
+      - 8000:8000
+    environment:
+      - NODE_ENV=development
+      - PORT=8000
+      - BABEL_DISABLE_CACHE=1
+      - TZ=Europe/Amsterdam
+    depends_on:
+      - db
+    entrypoint: ["/usr/bin/entrypoint.sh"]
+    extra_hosts:
+      - "hostnetwork:host-gateway"
+
+  db:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=lms
+    ports:
+      - 37432:5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # redis:
+  #   image: "bitnami/redis:latest"
+  #   ports:
+  #     - "16379:6379"
+  #   environment:
+  #     - REDIS_REPLICATION_MODE=master
+  #     - REDIS_PASSWORD=my_master_password
+
+volumes:
+  postgres_data:
+    driver: local
+  node_modules:
