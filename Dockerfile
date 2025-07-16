@@ -1,11 +1,11 @@
 FROM node:22-alpine
 
 # Set the working directory
-WORKDIR /app
+WORKDIR /usr/src/app
 
 # Copy package.json and package-lock.json
-COPY ./package.json /app/
-COPY ./package-lock.json /app/
+COPY ./src/package.json /usr/src/app
+COPY ./src/package-lock.json /usr/src/app
 
 
 # Install dependencies

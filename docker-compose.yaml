@@ -4,9 +4,10 @@ services:
       context: "."
     restart: always
     volumes:
-      - .:/app
-      - node_modules:/app/node_modules
+      - ./src:/usr/src/app
       - ./logs:/var/log
+      - /usr/src/app/node_modules
+      - ./src/node_modules:/usr/src/app/node_modules
     ports:
       - 8000:8000
     environment:

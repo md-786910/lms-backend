@@ -5,6 +5,7 @@ const path = require("path");
 const http = require("http");
 const app = require("./app.js");
 const { ENV_VARIABLE } = require("./constants/env");
+const db = require("./models/index.js");
 // create an HTTP server
 const server = http.createServer(app);
 
@@ -30,9 +31,21 @@ async function startServer() {
 
     // database init
 
+    // Test database connection
+   await db.sequelize
+      .authenticate()
+      .then(() => {
+        console.log("Database connected successfully!");
+      })
+      .catch((err) => {
+        console.error("Error connecting to the database:", err);
+      });
+
     server.listen(PORT, () => {
       console.log(`http://localhost:${PORT}`);
     });
+
+    
   } catch (err) {
     console.error("Database connection error:", err);
     process.exit(1);
@@ -61,4 +74,4 @@ process.on("SIGINT", () => {
 
 // Start the server
 startServer();
-// 
+//
