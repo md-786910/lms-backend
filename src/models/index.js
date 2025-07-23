@@ -40,7 +40,7 @@ Object.keys(db).forEach(modelName => {
 
 // sync to true in [development] mode to create tables automatically
 if (env === 'development') {
-  sequelize.sync({ force: false })
+  sequelize.sync({ force: false, alter: true })
     .then(() => {
       console.log('Database synced successfully!');
     })

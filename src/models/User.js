@@ -2,7 +2,16 @@
 const { Model } = require("sequelize");
 
 module.exports = (sequelize, DataTypes) => {
-  class User extends Model {}
+  class User extends Model {
+    static associate(models) {
+      // Each User belongs to one Company
+      User.belongsTo(models.Company, {
+        foreignKey: "company_id",
+        as: "company",
+        onDelete: "SET NULL",
+      });
+    }
+  }
   User.init(
     {
       first_name: {

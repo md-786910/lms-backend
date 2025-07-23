@@ -2,7 +2,19 @@ const { Model } = require("sequelize");
 const { TABLE_MODEL_MAPPING, TABLE_NAME } = require("../constants/table");
 
 module.exports = (sequelize, DataTypes) => {
-  class EmployeePersonalInformation extends Model {}
+  class EmployeePersonalInformation extends Model {
+    static associate(models) {
+      EmployeePersonalInformation.belongsTo(models.Employee, {
+        foreignKey: "employee_id",
+        as: "employee",
+      });
+
+      EmployeePersonalInformation.belongsTo(models.Company, {
+        foreignKey: "company_id",
+        as: "company",
+      });
+    }
+  }
   EmployeePersonalInformation.init(
     {
       emergency_contact_person: {
