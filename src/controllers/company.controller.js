@@ -1,76 +1,158 @@
 const db = require("../models");
 const { STATUS_CODE } = require("../constants/statusCode");
-const Company = db.Company;
+const catchAsync = require("../utils/catchAsync");
+const {
+  companyRepos,
+  userRepos,
+  userSessionRepos,
+  countryRepos,
+  industryRepos,
+} = require("../repository/base");
+const sequelize = require("sequelize");
+const { generateToken, hashPassword } = require("../helpers/jwt");
+const AppError = require("../utils/appError");
+const initCompanyDefault = require("../repository/initCompanyDefault");
+const Op = sequelize.Op;
 
 // Create a new company
-exports.createCompany = async (req, res) => {
-  try {
-    const {
-      company_name,
-      company_size,
-      logo,
-      industry,
-      company_website,
-      country_id,
-      subscribe_newsletter = false,
-      terms_accepted = false,
-    } = req.body;
+exports.createCompany = catchAsync(async (req, res, next) => {
+  if (!req.body) {
+    return res.status(STATUS_CODE.NOT_FOUND).json({
+      status: false,
+      message: "No data found",
+    });
+  }
+  const { company_obj, user } = req.body;
 
-    const company = await Company.create({
-      company_name,
-      company_size,
-      logo,
-      industry,
-      company_website,
-      country_id,
-      subscribe_newsletter,
-      terms_accepted,
+  // check company already exist
+  const company = await companyRepos.findOne({
+    where: {
+      company_name: {
+        [Op.iLike]: company_obj.company_name,
+      },
+    },
+  });
+  if (company) {
+    return res.status(STATUS_CODE.BAD_REQUEST).json({
+      status: false,
+      message: "Company already exist",
+    });
+  }
+
+  const transaction = await db.sequelize.transaction();
+  try {
+    // @start transaction
+    const companyCreate = await companyRepos.create(
+      { ...company_obj },
+      { transaction }
+    );
+
+    // @create company user - admin while company registering
+    const isUserExist = await userRepos.findOne({
+      where: {
+        email: user.email,
+      },
+    });
+    if (isUserExist) {
+      await transaction.rollback();
+      return res.status(STATUS_CODE.BAD_REQUEST).json({
+        status: false,
+        message: "email already exist",
+      });
+    }
+
+    // hash password
+    const hashPass = await hashPassword(user.password);
+    const newUser = await userRepos.create(
+      {
+        ...user,
+        company_id: companyCreate.id,
+        password: hashPass,
+      },
+      { transaction }
+    );
+    // create token and session
+    const token = await generateToken({
+      id: newUser.id,
+      email: newUser.email,
+      company_id: companyCreate.id,
+      role: "admin",
+    });
+    // login admin
+    await userSessionRepos.create(
+      {
+        user_id: newUser.id,
+        token,
+        employe_id: null,
+      },
+      { transaction }
+    );
+    // @end transaction
+    await transaction.commit();
+
+    // @just initialization company with default setup
+    await initCompanyDefault(companyCreate.id);
+    // end
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // ✅ 7 days in milliseconds
     });
 
-    res.status(STATUS_CODE.CREATED).json({
+    return res.status(STATUS_CODE.CREATED).json({
       status: true,
       message: "Company created successfully",
-      data: company,
+      data: {
+        company: companyCreate,
+        user: newUser,
+        token,
+      },
     });
   } catch (error) {
-    console.error("Create company error:", error);
-    res.status(STATUS_CODE.INTERNAL_SERVER_ERROR).json({
-      status: false,
-      message: "Failed to create company",
-      error: error.message,
-    });
+    console.log({ error });
+    await transaction.rollback();
+    next(new AppError(error, STATUS_CODE.INTERNAL_SERVER_ERROR));
   }
-};
+});
 
-// Get all companies
-exports.getAllCompanies = async (req, res) => {
-  try {
-    const companies = await Company.findAll();
-    res.status(STATUS_CODE.OK).json({
-      status: true,
-      message: "Company list fetched successfully",
-      data: companies,
-    });
-  } catch (error) {
-    console.error("Get all companies error:", error);
-    res.status(STATUS_CODE.INTERNAL_SERVER_ERROR).json({
-      status: false,
-      message: "Failed to fetch companies",
-      error: error.message,
-    });
+exports.searchCompany = catchAsync(async (req, res, next) => {
+  if (!req.query) {
+    return next(new AppError("query not found", STATUS_CODE.NOT_FOUND));
   }
-};
+  const { company_name } = req.query;
+  if (!company_name) {
+    return next(new AppError("company name not found", STATUS_CODE.NOT_FOUND));
+  }
+  console.log({ company_name });
+  const companyExist = await companyRepos.findOne({
+    where: {
+      company_name: {
+        [Op.iLike]: `${company_name}`,
+      },
+    },
+  });
+  if (companyExist) {
+    return next(new AppError("company already exist", STATUS_CODE.BAD_REQUEST));
+  }
+  res.status(STATUS_CODE.OK).json({
+    status: true,
+    message: "ok",
+  });
+});
 
 // Get a single company by ID
-exports.getCompanyById = async (req, res) => {
+exports.getCompanyById = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    const company = await Company.findByPk(id, {
-      nclude: [
-        {
-          model: db.User,
-          as: "users",
-        },
+    const { company_id } = req.user;
+    if (!company_id) {
+      return next(new AppError("company id not found", STATUS_CODE.NOT_FOUND));
+    }
+    const company = await companyRepos.findByPk(company_id, {
+      include: [
+        { model: countryRepos, as: "country" },
+        { model: industryRepos, as: "industry" },
       ],
     });
 
@@ -87,22 +169,26 @@ exports.getCompanyById = async (req, res) => {
       data: company,
     });
   } catch (error) {
-    console.error("Get company by ID error:", error);
-    res.status(STATUS_CODE.INTERNAL_SERVER_ERROR).json({
-      status: false,
-      message: "Failed to fetch company",
-      error: error.message,
-    });
+    next(new AppError(error, STATUS_CODE.INTERNAL_SERVER_ERROR));
   }
 };
 
 // Update a company
 exports.updateCompany = async (req, res) => {
   try {
-    const { id } = req.params;
+    if (!req.body) {
+      return res.status(STATUS_CODE.NOT_FOUND).json({
+        status: false,
+        message: "No data found",
+      });
+    }
+    const { company_id } = req.user;
+    if (!company_id) {
+      return next(new AppError("company id not found", STATUS_CODE.NOT_FOUND));
+    }
 
-    const [updated] = await Company.update(req.body, {
-      where: { id },
+    const [updated] = await companyRepos.update(req.body, {
+      where: { id: company_id },
     });
 
     if (updated === 0) {
@@ -111,16 +197,13 @@ exports.updateCompany = async (req, res) => {
         message: "Company not found or nothing to update",
       });
     }
-
-    const updatedCompany = await Company.findByPk(id);
-
+    const updatedCompany = await companyRepos.findByPk(company_id);
     res.status(STATUS_CODE.OK).json({
       status: true,
       message: "Company updated successfully",
       data: updatedCompany,
     });
   } catch (error) {
-    console.error("Update company error:", error);
     res.status(STATUS_CODE.INTERNAL_SERVER_ERROR).json({
       status: false,
       message: "Failed to update company",

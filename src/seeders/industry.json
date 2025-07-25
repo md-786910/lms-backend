@@ -1,0 +1,22 @@
+[
+  { "id": 1, "name": "Information Technology" },
+  { "id": 2, "name": "Healthcare" },
+  { "id": 3, "name": "Education" },
+  { "id": 4, "name": "Finance" },
+  { "id": 5, "name": "Construction" },
+  { "id": 6, "name": "Retail" },
+  { "id": 7, "name": "Manufacturing" },
+  { "id": 8, "name": "Transportation" },
+  { "id": 9, "name": "Hospitality" },
+  { "id": 10, "name": "Telecommunications" },
+  { "id": 11, "name": "Legal Services" },
+  { "id": 12, "name": "Marketing & Advertising" },
+  { "id": 13, "name": "Agriculture" },
+  { "id": 14, "name": "Real Estate" },
+  { "id": 15, "name": "Automotive" },
+  { "id": 16, "name": "Energy & Utilities" },
+  { "id": 17, "name": "Media & Entertainment" },
+  { "id": 18, "name": "Public Sector" },
+  { "id": 19, "name": "Consulting" },
+  { "id": 20, "name": "Food & Beverage" }
+]

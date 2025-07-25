@@ -1,18 +1,18 @@
 const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
 const { ENV_VARIABLE } = require("../constants/env");
-
 
 const jwtExpiry = ENV_VARIABLE.JWT_EXPIRATION || 60; // Default to 60 minutes if not set
 
-const generateToken = (user) => {
+const generateToken = (user, expiration = "7d") => {
   return jwt.sign(
     {
-      iss: ENV_VARIABLE.JWT_ISSUER,
       sub: user,
-      iat: new Date().getTime(),
-      exp: new Date().setDate(new Date().getDate() + jwtExpiry),
     },
-    ENV_VARIABLE.JWT_SECRET
+    ENV_VARIABLE.JWT_SECRET,
+    {
+      expiresIn: expiration,
+    }
   );
 };
 
@@ -22,6 +22,17 @@ const verifyToken = (token) => {
 
 const addMinutesToCurrentTime = (minutes) => {
   return new Date(new Date().getTime() + minutes * 60000);
+};
+
+const hashPassword = (password) => {
+  return bcrypt.hash(password, 10);
+};
+
+const verifyHashPassword = (password, hashPassword) => {
+  if (!password || !hashPassword) {
+    throw new Error("Password or hashed password is missing");
+  }
+  return bcrypt.compare(password, hashPassword);
 };
 
 // const compileTemplateToHtml = (templatePath, data) => {
@@ -45,4 +56,6 @@ module.exports = {
   addMinutesToCurrentTime,
   // compileTemplateToHtml,
   generateOTP,
+  hashPassword,
+  verifyHashPassword,
 };

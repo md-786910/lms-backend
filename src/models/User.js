@@ -5,15 +5,19 @@ module.exports = (sequelize, DataTypes) => {
   class User extends Model {
     static associate(models) {
       // Each User belongs to one Company
-      User.belongsTo(models.Company, {
-        foreignKey: "company_id",
-        as: "company",
-        onDelete: "SET NULL",
-      });
+      // User.belongsTo(models.Company, {
+      //   foreignKey: "company_id",
+      //   as: "company",
+      //   onDelete: "SET NULL",
+      // });
     }
   }
   User.init(
     {
+      company_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
       first_name: {
         type: DataTypes.STRING,
         allowNull: true,

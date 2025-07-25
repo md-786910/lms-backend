@@ -7,7 +7,7 @@ module.exports = (sequelize, DataTypes) => {
     {
       user_id: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        allowNull: true,
       },
       employee_id: {
         type: DataTypes.INTEGER,
@@ -15,10 +15,6 @@ module.exports = (sequelize, DataTypes) => {
       },
       token: {
         type: DataTypes.STRING,
-        allowNull: false,
-      },
-      expires_at: {
-        type: DataTypes.DATE,
         allowNull: false,
       },
     },

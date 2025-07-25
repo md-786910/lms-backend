@@ -1,12 +1,17 @@
 const cookieParser = require("cookie-parser");
 const express = require("express");
 const statusMonitor = require("express-status-monitor");
+const cors = require("cors");
 
 const { STATUS_CODE } = require("./constants/statusCode");
 const { globalErrorHandler } = require("./middleware/globalErrorHandler");
-const { authenticateClient } = require("./helpers/authenticate");
-const { userRoute } = require("./routes");
+const {
+  authenticateClient,
+  authenticateAdmin,
+} = require("./helpers/authenticate");
+const { userRoute, companyRoute, settingsRoute } = require("./routes");
 const { ENV_VARIABLE } = require("./constants/env");
+const { countryRepos } = require("./repository/base");
 
 // @ App initialization
 const app = express();
@@ -14,8 +19,14 @@ const app = express();
 // User route
 const router = express.Router();
 
-// Admin royte [Do it later]
-const adminRouter = express.Router();
+// add cors
+const corsOptions = {
+  origin: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+};
+router.use(cors(corsOptions));
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -47,15 +58,25 @@ app.use((req, res, next) => {
 
 // Routes
 app.get("/monitor", monitor.pageRoute);
-
+app.get("/api/v1/country", async (req, res) => {
+  const countries = await countryRepos.findAll({});
+  res.status(STATUS_CODE.OK).json({
+    status: true,
+    message: "All countries fetched",
+    data: countries,
+  });
+});
 
 app.get("/", (req, res) => {
   res.status(STATUS_CODE.OK).send("Welcome to the LMS App API");
 });
 
-// Middleware for authentication
-router.use(authenticateClient);
+// admin routes (admin)
+router.use(authenticateAdmin);
+router.use("/company", companyRoute);
+router.use("/setting", settingsRoute);
 
+// for auth
 router.use("/user", userRoute);
 
 // Handling 404 errors
