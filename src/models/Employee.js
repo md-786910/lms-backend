@@ -5,16 +5,15 @@ module.exports = (sequelize, DataTypes) => {
   class Employee extends Model {
     static associate(models) {
       // One employee has one personal information record
-      Employee.hasOne(models.EmployeePersonalInformation, {
-        foreignKey: "employee_id",
-        as: "personal_info",
-      });
-
-      // Each employee belongs to a company (optional, if defined)
-      Employee.belongsTo(models.Company, {
-        foreignKey: "company_id",
-        as: "company",
-      });
+      // Employee.hasOne(models.EmployeePersonalInformation, {
+      //   foreignKey: "employee_id",
+      //   as: "personal_info",
+      // });
+      // // Each employee belongs to a company (optional, if defined)
+      // Employee.belongsTo(models.Company, {
+      //   foreignKey: "company_id",
+      //   as: "company",
+      // });
     }
   }
   Employee.init(
@@ -37,6 +36,9 @@ module.exports = (sequelize, DataTypes) => {
       email: {
         type: DataTypes.STRING,
         allowNull: false,
+      },
+      password: {
+        type: DataTypes.STRING,
       },
       phone_number: {
         type: DataTypes.STRING,
@@ -88,7 +90,7 @@ module.exports = (sequelize, DataTypes) => {
       },
       role: {
         type: DataTypes.ENUM,
-        values: ["employee", "admin", "superadmin"],
+        values: ["employee"],
         defaultValue: "employee",
       },
     },

@@ -3,7 +3,10 @@ const AppError = require("../utils/appError");
 const joiValidation = (schema) => {
   return (req, res, next) => {
     let postdata = { ...req.body };
-    const { error, value } = schema.validate(postdata);
+    const { error, value } = schema.validate(postdata, {
+      abortEarly: false,
+      allowUnknown: true,
+    });
     if (error == undefined) {
       next();
     } else {
@@ -55,5 +58,5 @@ module.exports = {
   joiValidation,
   emptyCheck,
   postCheckArray,
-    getCheck,
-}
+  getCheck,
+};

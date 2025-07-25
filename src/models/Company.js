@@ -5,15 +5,25 @@ module.exports = (sequelize, DataTypes) => {
   class Company extends Model {
     static associate(models) {
       // A Company has many Users
-      Company.hasMany(models.User, {
-        foreignKey: "company_id",
-        as: "users",
-        onDelete: "CASCADE",
+      this.hasOne(models[TABLE_MODEL_MAPPING[TABLE_NAME.COUNTRY]], {
+        foreignKey: "id",
+        sourceKey: "country_id",
+        as: "country",
       });
-      Company.hasMany(models.EmployeePersonalInformation, {
-        foreignKey: "company_id",
-        as: "employee_personal_infos",
+      this.hasOne(models[TABLE_MODEL_MAPPING[TABLE_NAME.INDUSTY]], {
+        foreignKey: "id",
+        sourceKey: "industry_id",
+        as: "industry",
       });
+      // Company.hasMany(models.User, {
+      //   foreignKey: "company_id",
+      //   as: "users",
+      //   onDelete: "CASCADE",
+      // });
+      // Company.hasMany(models.EmployeePersonalInformation, {
+      //   foreignKey: "company_id",
+      //   as: "employee_personal_infos",
+      // });
     }
   }
   Company.init(
@@ -30,8 +40,8 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: true,
       },
-      industry: {
-        type: DataTypes.STRING,
+      industry_id: {
+        type: DataTypes.INTEGER,
         allowNull: false,
       },
       company_website: {
@@ -49,6 +59,12 @@ module.exports = (sequelize, DataTypes) => {
       terms_accepted: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
+      },
+      tax_no: {
+        type: DataTypes.STRING,
+      },
+      address: {
+        type: DataTypes.TEXT,
       },
     },
     {

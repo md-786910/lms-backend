@@ -14,7 +14,13 @@ const TABLE_NAME = {
   DEPARTMENT: "departments",
   DESIGNATION: "designations",
   COUNTRY: "countries",
+  INDUSTY: "industries",
   DOCUMENT_CATEGORY: "document_categories",
+
+  PREFIX: "prefixes",
+  LEAVE: "leaves",
+  CURRENCY: "currencies",
+  TEMPLATE: "templates",
 };
 
 const TABLE_MODEL_MAPPING = {
@@ -33,7 +39,13 @@ const TABLE_MODEL_MAPPING = {
   [TABLE_NAME.DEPARTMENT]: "Department",
   [TABLE_NAME.DESIGNATION]: "Designation",
   [TABLE_NAME.COUNTRY]: "Country",
+  [TABLE_NAME.INDUSTY]: "Industry",
   [TABLE_NAME.DOCUMENT_CATEGORY]: "DocumentCategory",
+
+  [TABLE_NAME.PREFIX]: "Prefix",
+  [TABLE_NAME.LEAVE]: "Leave",
+  [TABLE_NAME.CURRENCY]: "Currency",
+  [TABLE_NAME.TEMPLATE]: "Template",
 };
 
 module.exports = {
