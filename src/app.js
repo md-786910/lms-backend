@@ -6,18 +6,31 @@ const cors = require("cors");
 const { STATUS_CODE } = require("./constants/statusCode");
 const { globalErrorHandler } = require("./middleware/globalErrorHandler");
 const {
-  authenticateClient,
   authenticateAdmin,
+  authenticateEmployee,
 } = require("./helpers/authenticate");
-const { userRoute, companyRoute, settingsRoute } = require("./routes");
+const {
+  userRoute,
+  companyRoute,
+  settingsRoute,
+  fileRoute,
+  companyEmployeeRoute,
+  companyLeaveRoute,
+} = require("./routes");
 const { ENV_VARIABLE } = require("./constants/env");
 const { countryRepos } = require("./repository/base");
+const leaveRouter = require("./routes/employee/leave.route");
+const dashboardRoute = require("./routes/dashboardRoute.route");
+const employeeDashboardRouter = require("./routes/employee/dashboard.route");
+const profileRouter = require("./routes/employee/profile.route");
+const notificationRouter = require("./routes/notification.route");
 
 // @ App initialization
 const app = express();
 
 // User route
 const router = express.Router();
+const employeeRouter = express.Router();
 
 // add cors
 const corsOptions = {
@@ -27,10 +40,14 @@ const corsOptions = {
   credentials: true,
 };
 router.use(cors(corsOptions));
+employeeRouter.use(cors(corsOptions));
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cookieParser());
+
+// make static files accessible
+app.use("/uploads", express.static("uploads"));
 
 // Secure HTTP headers
 app.set("trust proxy", true);
@@ -71,13 +88,31 @@ app.get("/", (req, res) => {
   res.status(STATUS_CODE.OK).send("Welcome to the LMS App API");
 });
 
+// notification
+app.use("/notification", notificationRouter);
+
 // admin routes (admin)
 router.use(authenticateAdmin);
 router.use("/company", companyRoute);
 router.use("/setting", settingsRoute);
 
+// dashboard
+router.use("/dashboard", dashboardRoute);
+
+// employee routes
+router.use("/company/employee", companyEmployeeRoute);
+router.use("/company/leave", companyLeaveRoute);
+router.use("/file", fileRoute);
+
 // for auth
 router.use("/user", userRoute);
+
+//========================Employee router=================================================
+employeeRouter.use(authenticateEmployee);
+employeeRouter.use("/leave", leaveRouter);
+employeeRouter.use("/dashboard", employeeDashboardRouter);
+employeeRouter.use("/profile", profileRouter);
+// employeeRouter.use("/salary", leaveRouter);
 
 // Handling 404 errors
 router.use((req, res, next) => {
@@ -88,12 +123,22 @@ router.use((req, res, next) => {
   });
   next();
 });
+employeeRouter.use((req, res, next) => {
+  res.status(STATUS_CODE.NOT_FOUND).json({
+    status: false,
+    message: "Route not found",
+    data: null,
+  });
+  next();
+});
 
 router.use(globalErrorHandler);
+employeeRouter.use(globalErrorHandler);
 
 const BASE_PREFIX_URL = `/api/${ENV_VARIABLE.API_VERSION}`;
 console.log({ BASE_PREFIX_URL });
 
+app.use("/api/v1/employee", employeeRouter);
 app.use("/api/v1", router);
 
 app.use((req, res, next) => {

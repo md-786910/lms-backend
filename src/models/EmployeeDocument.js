@@ -2,7 +2,21 @@ const { Model } = require("sequelize");
 const { TABLE_MODEL_MAPPING, TABLE_NAME } = require("../constants/table");
 
 module.exports = (sequelize, DataTypes) => {
-  class EmployeeDocument extends Model {}
+  class EmployeeDocument extends Model {
+    static associate(models) {
+      this.hasOne(models[TABLE_MODEL_MAPPING[TABLE_NAME.DOCUMENT_CATEGORY]], {
+        sourceKey: "document_category_id",
+        foreignKey: "id",
+        as: "document_category",
+      });
+
+      this.hasOne(models.file, {
+        sourceKey: "file_id",
+        foreignKey: "id",
+        as: "file",
+      });
+    }
+  }
   EmployeeDocument.init(
     {
       employee_id: {
@@ -19,11 +33,8 @@ module.exports = (sequelize, DataTypes) => {
       document_number: {
         type: DataTypes.STRING,
       },
-      file_path: {
-        type: DataTypes.STRING,
-      },
-      street: {
-        type: DataTypes.STRING,
+      file_id: {
+        type: DataTypes.INTEGER,
       },
     },
     {

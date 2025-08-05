@@ -1,5 +1,8 @@
 const eventObj = Object.freeze({
-  REGISTER_EMPLOYE: "registerEmployee",
+  ADD_NEW_EMPLOYEE: "add_new_employee",
+  APPROVED_LEAVE: "approved_leave",
+  REJECTED_LEAVE: "reject_leave",
+  LEAVE_REQUEST: "leave_request",
 });
 
 module.exports = eventObj;

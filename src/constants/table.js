@@ -9,6 +9,9 @@ const TABLE_NAME = {
   EMPLOYEE_PERSONAL_INFORMATION: "employee_personal_informations",
   EMPLOYEE_SALARY: "employee_salaries",
   EMPLOYEE_DOCUMENT: "employee_documents",
+  EMPLOYEE_LEAVE: "employee_leaves",
+  LEAVE_REQUEST: "leave_requests",
+  ACTIVITY: "activities",
 
   // Admin
   DEPARTMENT: "departments",
@@ -21,6 +24,8 @@ const TABLE_NAME = {
   LEAVE: "leaves",
   CURRENCY: "currencies",
   TEMPLATE: "templates",
+
+  NOTIFICATION: "notifications",
 };
 
 const TABLE_MODEL_MAPPING = {
@@ -34,6 +39,9 @@ const TABLE_MODEL_MAPPING = {
   [TABLE_NAME.EMPLOYEE_ADDRESS]: "EployeeAddress",
   [TABLE_NAME.EMPLOYEE_PERSONAL_INFORMATION]: "EmployeePersonalInformation",
   [TABLE_NAME.EMPLOYEE_SALARY]: "EmployeeSalary",
+  [TABLE_NAME.EMPLOYEE_LEAVE]: "EmployeeLeave",
+  [TABLE_NAME.LEAVE_REQUEST]: "LeaveRequest",
+  [TABLE_NAME.ACTIVITY]: "Activity",
 
   // Admin
   [TABLE_NAME.DEPARTMENT]: "Department",
@@ -46,6 +54,8 @@ const TABLE_MODEL_MAPPING = {
   [TABLE_NAME.LEAVE]: "Leave",
   [TABLE_NAME.CURRENCY]: "Currency",
   [TABLE_NAME.TEMPLATE]: "Template",
+
+  [TABLE_NAME.NOTIFICATION]: "Notification",
 };
 
 module.exports = {

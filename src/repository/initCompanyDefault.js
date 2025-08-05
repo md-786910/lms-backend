@@ -4,6 +4,7 @@ const {
   designationsData,
   prefixData,
   leavesData,
+  documentData,
 } = require("../data/general");
 const {
   currencyRepos,
@@ -11,6 +12,7 @@ const {
   designationRepos,
   prefixRepos,
   leaveRepos,
+  documentCategoryRepos,
 } = require("./base");
 const db = require("../models");
 
@@ -70,6 +72,18 @@ module.exports = async (company_id) => {
         { transaction }
       );
     }
+
+    // document category
+    for (const docCategory of documentData) {
+      await documentCategoryRepos.create(
+        {
+          ...docCategory,
+          company_id,
+        },
+        { transaction }
+      );
+    }
+
     // Templates
     await transaction.commit();
   } catch (error) {

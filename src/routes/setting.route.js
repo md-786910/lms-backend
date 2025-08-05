@@ -19,17 +19,20 @@ const {
   getLeaveById,
   updateLeave,
   deleteLeave,
+  getDocumentCategory,
+  createDocumentCategory,
+  getDocumentCategoryById,
+  updateDocumentCategory,
+  removeDocumentCagegory,
 } = require("../controllers/setting.controller");
-const { joiValidation } = require("../middleware/validation");
+const { joiValidation, postCheckArray } = require("../middleware/validation");
 const router = express.Router();
 const settingSchema = require("../schema/setting.schema");
 // prefix
-router.get("/prefix", getPrefix);
-router.put(
-  "/prefix/:id",
-  joiValidation(settingSchema.updatePrefix),
-  updatePrefix
-);
+router
+  .route("/prefix")
+  .get(getPrefix)
+  .put(postCheckArray(settingSchema.updatePrefix), updatePrefix);
 
 // currency
 router.get("/currency", getCurrency);
@@ -74,5 +77,22 @@ router
   .get(getLeaveById)
   .put(joiValidation(settingSchema.updateCreateLeave), updateLeave)
   .delete(deleteLeave);
+
+// Document category
+router
+  .route("/document-category")
+  .get(getDocumentCategory)
+  .post(
+    joiValidation(settingSchema.updateDocumentCategory),
+    createDocumentCategory
+  );
+router
+  .route("/document-category/:id")
+  .get(getDocumentCategoryById)
+  .put(
+    joiValidation(settingSchema.updateDocumentCategory),
+    updateDocumentCategory
+  )
+  .delete(removeDocumentCagegory);
 
 module.exports = router;

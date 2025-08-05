@@ -83,6 +83,37 @@ const leavesData = [
   },
 ];
 
+const documentData = [
+  {
+    type: "Aadhar Card",
+    is_required: false,
+  },
+  {
+    type: "Pan Card",
+    is_required: false,
+  },
+  {
+    type: "Passport",
+    is_required: false,
+  },
+  {
+    type: "Driving License",
+    is_required: false,
+  },
+  {
+    type: "Voter ID Card",
+    is_required: false,
+  },
+  {
+    type: "Graduation Certificate",
+    is_required: false,
+  },
+  {
+    type: "High School Certificate",
+    is_required: false,
+  },
+];
+
 const templateData = [
   {
     id: 1,
@@ -102,4 +133,5 @@ module.exports = {
   leavesData,
   templateData,
   prefixData,
+  documentData,
 };

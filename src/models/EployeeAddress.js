@@ -2,7 +2,15 @@ const { Model } = require("sequelize");
 const { TABLE_MODEL_MAPPING, TABLE_NAME } = require("../constants/table");
 
 module.exports = (sequelize, DataTypes) => {
-  class EmployeeAddress extends Model {}
+  class EmployeeAddress extends Model {
+    static associate(models) {
+      this.hasOne(models[TABLE_MODEL_MAPPING[TABLE_NAME.COUNTRY]], {
+        foreignKey: "id",
+        sourceKey: "country_id",
+        as: "country",
+      });
+    }
+  }
   EmployeeAddress.init(
     {
       street: {

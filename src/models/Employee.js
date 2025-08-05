@@ -4,16 +4,21 @@ const { TABLE_MODEL_MAPPING, TABLE_NAME } = require("../constants/table");
 module.exports = (sequelize, DataTypes) => {
   class Employee extends Model {
     static associate(models) {
-      // One employee has one personal information record
-      // Employee.hasOne(models.EmployeePersonalInformation, {
-      //   foreignKey: "employee_id",
-      //   as: "personal_info",
-      // });
-      // // Each employee belongs to a company (optional, if defined)
-      // Employee.belongsTo(models.Company, {
-      //   foreignKey: "company_id",
-      //   as: "company",
-      // });
+      this.hasOne(models[TABLE_MODEL_MAPPING[TABLE_NAME.DEPARTMENT]], {
+        foreignKey: "id",
+        sourceKey: "department_id",
+        as: "department",
+      });
+      this.hasOne(models[TABLE_MODEL_MAPPING[TABLE_NAME.DESIGNATION]], {
+        foreignKey: "id",
+        sourceKey: "designation_id",
+        as: "designation",
+      });
+      this.hasMany(models[TABLE_MODEL_MAPPING[TABLE_NAME.EMPLOYEE_LEAVE]], {
+        sourceKey: "id",
+        foreignKey: "employee_id",
+        as: "employee_leaves",
+      });
     }
   }
   Employee.init(
@@ -22,8 +27,7 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.INTEGER,
         allowNull: false,
       },
-      employee_id: {
-        // prefix with EMP-01
+      employee_no: {
         type: DataTypes.STRING,
         allowNull: true,
       },
@@ -32,6 +36,12 @@ module.exports = (sequelize, DataTypes) => {
       },
       last_name: {
         type: DataTypes.STRING,
+      },
+      full_name: {
+        type: DataTypes.VIRTUAL,
+        get() {
+          return `${this.first_name} ${this.last_name}`;
+        },
       },
       email: {
         type: DataTypes.STRING,
@@ -72,6 +82,10 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.DATE,
         allowNull: true,
       },
+      date_of_birth: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
       last_date_of_work: {
         type: DataTypes.DATE,
         allowNull: true,
@@ -84,9 +98,16 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
       },
-      is_verified_email: {
+      is_email_verified: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
+      },
+      is_password_created: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+      },
+      profile: {
+        type: DataTypes.STRING,
       },
       role: {
         type: DataTypes.ENUM,

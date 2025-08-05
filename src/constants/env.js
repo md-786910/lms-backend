@@ -14,6 +14,10 @@ const ENV_VARIABLE = Object.freeze({
   SMTP_PORT: process.env.SMTP_PORT,
   SMTP_USER: process.env.SMTP_USER,
   SMTP_PASS: process.env.SMTP_PASS,
+
+  CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
+  CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
+  CLOUDINARY_NAME: process.env.CLOUDINARY_NAME,
 });
 
 module.exports = { ENV_VARIABLE };

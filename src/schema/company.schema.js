@@ -3,12 +3,12 @@ const companyCreate = Joi.object({
   company_obj: Joi.object({
     company_name: Joi.string().required(),
     company_size: Joi.number().required(),
-    logo: Joi.string().optional(),
+    logo: Joi.string().allow("", null),
     industry_id: Joi.number().required(),
-    company_website: Joi.string().optional(),
+    company_website: Joi.string().allow("", null),
     country_id: Joi.number().required(),
-    subscribe_newsletter: Joi.boolean().optional(),
-    terms_accepted: Joi.boolean().optional(),
+    subscribe_newsletter: Joi.boolean().allow("", null),
+    terms_accepted: Joi.boolean().allow("", null),
   }).required(),
   user: Joi.object({
     first_name: Joi.string().required(),
@@ -30,12 +30,11 @@ const companyCreate = Joi.object({
   }).required(),
 });
 const companyUpdate = Joi.object({
-  company_name: Joi.string().required(),
-  logo: Joi.string().optional(),
-  company_website: Joi.string().uri().optional(),
-  tax_no: Joi.string().optional(),
-  address: Joi.string().optional(),
-  subscribe_newsletter: Joi.boolean().optional(),
+  logo: Joi.string().allow("", null),
+  company_website: Joi.string().allow("", null),
+  tax_no: Joi.string().allow("", null),
+  address: Joi.string().allow("", null),
+  subscribe_newsletter: Joi.boolean().allow("", null),
 });
 module.exports = {
   companyCreate,

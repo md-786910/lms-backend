@@ -179,6 +179,5 @@ module.exports.globalErrorHandler = (err, req, res, next) => {
     message,
     ...(isDev && { stack: err.stack }),
   };
-
   return res.status(statusCode).json(errorResponse);
 };

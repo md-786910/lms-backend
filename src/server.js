@@ -5,6 +5,7 @@ const http = require("http");
 const app = require("./app.js");
 const { ENV_VARIABLE } = require("./constants/env");
 const db = require("./models/index.js");
+const { initSocket } = require("./config/initsocket.js");
 // create an HTTP server
 const server = http.createServer(app);
 
@@ -63,5 +64,8 @@ process.on("SIGINT", () => {
 });
 
 // Start the server
-startServer();
+startServer().then(() => {
+  console.log("socket start");
+  const io = initSocket(server);
+});
 //

@@ -77,6 +77,7 @@ exports.createCompany = catchAsync(async (req, res, next) => {
       email: newUser.email,
       company_id: companyCreate.id,
       role: "admin",
+      country_id: companyCreate.country_id,
     });
     // login admin
     await userSessionRepos.create(
@@ -145,7 +146,15 @@ exports.searchCompany = catchAsync(async (req, res, next) => {
 // Get a single company by ID
 exports.getCompanyById = async (req, res, next) => {
   try {
-    const { company_id } = req.user;
+    const {
+      company_id,
+      id,
+      first_name,
+      last_name,
+      phone_number,
+      phone_country_code,
+      email,
+    } = req.user;
     if (!company_id) {
       return next(new AppError("company id not found", STATUS_CODE.NOT_FOUND));
     }
@@ -162,6 +171,15 @@ exports.getCompanyById = async (req, res, next) => {
         message: "Company not found",
       });
     }
+
+    company["dataValues"].user = {
+      id,
+      first_name,
+      last_name,
+      phone_number,
+      phone_country_code,
+      email,
+    };
 
     res.status(STATUS_CODE.OK).json({
       status: true,
