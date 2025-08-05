@@ -1,24 +1,20 @@
 //import { STATUS_CODE } from "../constants/statusCode.js";
 
 const { STATUS_CODE } = require("../constants/statusCode");
-const { userRepos, userSessionRepos } = require("../repository/base");
+const {
+  userRepos,
+  userSessionRepos,
+  employeeRepos,
+} = require("../repository/base");
 const AppError = require("../utils/appError");
 const { verifyToken } = require("./jwt");
 
 // create a middleware to authenticate user and also whitelist routes like
-module.exports.authenticateClient = async (req, res, next) => {
+module.exports.authenticateEmployee = async (req, res, next) => {
   try {
     const { path } = req;
-    console.log({ path });
-    const whitelist = [
-      "/user/create",
-      "/user/login",
-      "/user/forgot-password",
-      "/user/reset-password",
-      "/user/verify-email",
-      "/resend-verification-email",
-      "/logout",
-    ];
+    console.log({ employee: path });
+    const whitelist = ["/logout"];
     if (whitelist.includes(path)) {
       next();
     } else {
@@ -28,12 +24,15 @@ module.exports.authenticateClient = async (req, res, next) => {
           message: "Token not found",
           data: null,
         });
-
       const token = req.header("authorization").split("Bearer ");
-      req.employee = verifyToken(token[1]).sub;
-      const user = await getUser({
-        email: req.employee.email,
-        username: req.employee.userName,
+      req.user = verifyToken(token[1]).sub;
+      const user = await employeeRepos.findOne({
+        where: {
+          email: req.user?.email,
+          company_id: req.user?.company_id,
+          id: req.user?.id,
+          role: "employee",
+        },
       });
       if (!user) {
         return res.status(STATUS_CODE.UNAUTHORIZED).json({
@@ -42,14 +41,6 @@ module.exports.authenticateClient = async (req, res, next) => {
           data: null,
         });
       }
-      if (!user) {
-        return res.status(STATUS_CODE.UNAUTHORIZED).json({
-          status: false,
-          message: "invalid token or user not found",
-          data: null,
-        });
-      }
-
       req.user = user;
       next();
     }
@@ -73,6 +64,8 @@ module.exports.authenticateAdmin = async (req, res, next) => {
       "/user/login",
       "/user/forgot-password",
       "/user/reset-password",
+      "/user/verify-email",
+      "/employee",
     ];
     if (whitelist.includes(path)) {
       next();

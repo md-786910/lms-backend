@@ -1,13 +1,12 @@
-const { Prefix } = require("../models");
 const { STATUS_CODE } = require("../constants/statusCode");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
 const {
-  prefixRepos,
   departmentRepos,
   currencyRepos,
   designationRepos,
   leaveRepos,
+  documentCategoryRepos,
 } = require("../repository/base");
 
 // GET all prefixes for the company
@@ -16,17 +15,10 @@ const getPrefix = catchAsync(async (req, res, next) => {
   if (!company_id) {
     return next(new AppError("company id not found", STATUS_CODE.NOT_FOUND));
   }
-  const prefixes = await prefixRepos.findAll({
-    attributes: ["id", "name", "department_id"],
-    where: { company_id },
-    include: [
-      {
-        attributes: ["id", "name"],
-        model: departmentRepos,
-        as: "department",
-      },
-    ],
 
+  const prefixes = await departmentRepos.findAll({
+    attributes: ["id", "name", "prefix"],
+    where: { company_id },
     sort: [["id", "DESC"]],
   });
 
@@ -39,35 +31,31 @@ const getPrefix = catchAsync(async (req, res, next) => {
 
 // UPDATE a prefix for a department by prefix id (or department_id)
 const updatePrefix = catchAsync(async (req, res, next) => {
-  const { id } = req.params; // prefix ID
-  if (!id) {
-    return next(new AppError("prefix id not found", STATUS_CODE.NOT_FOUND));
-  }
   const company_id = req.user?.company_id;
   if (!company_id) {
     return next(new AppError("company id not found", STATUS_CODE.NOT_FOUND));
   }
-  const { name } = req.body;
-
-  const prefix = await prefixRepos.findOne({
-    where: {
-      id,
-      company_id,
-    },
-  });
-  if (!prefix) {
-    return res.status(STATUS_CODE.NOT_FOUND).json({
-      status: "error",
-      message: "Prefix not found",
+  const prefixData = req.body;
+  for (const prefix_d of prefixData) {
+    const { id, prefix } = prefix_d;
+    const prefixResp = await departmentRepos.findOne({
+      where: {
+        id,
+        company_id,
+      },
     });
+    if (!prefixResp) {
+      continue;
+    }
+
+    prefixResp.prefix = prefix;
+    await prefixResp.save();
   }
 
-  prefix.name = name;
-  await prefix.save();
   res.status(STATUS_CODE.OK).json({
     status: "success",
     message: "Prefix updated successfully",
-    data: prefix,
+    data: null,
   });
 });
 
@@ -79,6 +67,7 @@ const getCurrency = catchAsync(async (req, res, next) => {
   }
   const currencies = await currencyRepos.findAll({
     where: { company_id },
+    order: [["createdAt", "DESC"]],
   });
   res.status(STATUS_CODE.OK).json({
     status: true,
@@ -89,7 +78,7 @@ const getCurrency = catchAsync(async (req, res, next) => {
 
 const updateCurrency = catchAsync(async (req, res, next) => {
   const { id } = req.params; // currencyRepos ID
-  if (!id) {
+  if (!id || id === "undefined") {
     return next(new AppError("currency id not found", STATUS_CODE.NOT_FOUND));
   }
   const company_id = req.user?.company_id;
@@ -140,6 +129,7 @@ const getDepartment = catchAsync(async (req, res, next) => {
   }
   const departments = await departmentRepos.findAll({
     where: { company_id },
+    order: [["createdAt", "DESC"]],
   });
   res.status(STATUS_CODE.OK).json({
     status: true,
@@ -159,6 +149,7 @@ const createDepartment = catchAsync(async (req, res, next) => {
     description,
     company_id,
   });
+
   res.status(STATUS_CODE.OK).json({
     status: true,
     message: "Department created successfully",
@@ -168,7 +159,7 @@ const createDepartment = catchAsync(async (req, res, next) => {
 
 const getDepartmentById = catchAsync(async (req, res, next) => {
   const { id } = req.params;
-  if (!id) {
+  if (!id || id === "undefined") {
     return next(new AppError("department id not found", STATUS_CODE.NOT_FOUND));
   }
   const company_id = req.user?.company_id;
@@ -188,7 +179,7 @@ const getDepartmentById = catchAsync(async (req, res, next) => {
 
 const updateDepartment = catchAsync(async (req, res, next) => {
   const { id } = req.params;
-  if (!id) {
+  if (!id || id === "undefined") {
     return next(new AppError("department id not found", STATUS_CODE.NOT_FOUND));
   }
   const company_id = req.user?.company_id;
@@ -214,7 +205,7 @@ const updateDepartment = catchAsync(async (req, res, next) => {
 
 const deleteDepartment = catchAsync(async (req, res, next) => {
   const { id } = req.params;
-  if (!id) {
+  if (!id || id === "undefined") {
     return next(new AppError("department id not found", STATUS_CODE.NOT_FOUND));
   }
   const company_id = req.user?.company_id;
@@ -228,6 +219,7 @@ const deleteDepartment = catchAsync(async (req, res, next) => {
     return next(new AppError("department not found", STATUS_CODE.NOT_FOUND));
   }
   await department.destroy();
+
   res.status(STATUS_CODE.OK).json({
     status: true,
     message: "Department deleted successfully",
@@ -237,6 +229,7 @@ const deleteDepartment = catchAsync(async (req, res, next) => {
 // designation
 const getDesignation = catchAsync(async (req, res, next) => {
   const company_id = req.user?.company_id;
+  console.log({ company_id });
   if (!company_id) {
     return next(new AppError("company id not found", STATUS_CODE.NOT_FOUND));
   }
@@ -246,9 +239,14 @@ const getDesignation = catchAsync(async (req, res, next) => {
       {
         attributes: ["id", "name", "description"],
         model: departmentRepos,
+        // where: {
+        //   company_id,
+        // },
         as: "department",
+        required: true,
       },
     ],
+    order: [["createdAt", "DESC"]],
   });
   res.status(STATUS_CODE.OK).json({
     status: true,
@@ -277,7 +275,7 @@ const createDesignation = catchAsync(async (req, res, next) => {
 
 const getDesignationById = catchAsync(async (req, res, next) => {
   const { id } = req.params;
-  if (!id) {
+  if (!id || id === "undefined") {
     return next(
       new AppError("designation id not found", STATUS_CODE.NOT_FOUND)
     );
@@ -306,7 +304,7 @@ const getDesignationById = catchAsync(async (req, res, next) => {
 
 const updateDesignation = catchAsync(async (req, res, next) => {
   const { id } = req.params;
-  if (!id) {
+  if (!id || id === "undefined") {
     return next(
       new AppError("designation id not found", STATUS_CODE.NOT_FOUND)
     );
@@ -334,7 +332,7 @@ const updateDesignation = catchAsync(async (req, res, next) => {
 
 const deleteDesignation = catchAsync(async (req, res, next) => {
   const { id } = req.params;
-  if (!id) {
+  if (!id || id === "undefined") {
     return next(
       new AppError("designation id not found", STATUS_CODE.NOT_FOUND)
     );
@@ -364,6 +362,7 @@ const getLeave = catchAsync(async (req, res, next) => {
   }
   const leaves = await leaveRepos.findAll({
     where: { company_id },
+    order: [["createdAt", "DESC"]],
   });
   res.status(STATUS_CODE.OK).json({
     status: true,
@@ -392,7 +391,7 @@ const createLeave = catchAsync(async (req, res, next) => {
 
 const getLeaveById = catchAsync(async (req, res, next) => {
   const { id } = req.params;
-  if (!id) {
+  if (!id || id === "undefined") {
     return next(new AppError("leave id not found", STATUS_CODE.NOT_FOUND));
   }
   const company_id = req.user?.company_id;
@@ -411,7 +410,7 @@ const getLeaveById = catchAsync(async (req, res, next) => {
 
 const updateLeave = catchAsync(async (req, res, next) => {
   const { id } = req.params;
-  if (!id) {
+  if (!id || id === "undefined") {
     return next(new AppError("leave id not found", STATUS_CODE.NOT_FOUND));
   }
   const company_id = req.user?.company_id;
@@ -437,7 +436,7 @@ const updateLeave = catchAsync(async (req, res, next) => {
 
 const deleteLeave = catchAsync(async (req, res, next) => {
   const { id } = req.params;
-  if (!id) {
+  if (!id || id === "undefined") {
     return next(new AppError("leave id not found", STATUS_CODE.NOT_FOUND));
   }
   const company_id = req.user?.company_id;
@@ -454,6 +453,116 @@ const deleteLeave = catchAsync(async (req, res, next) => {
   res.status(STATUS_CODE.OK).json({
     status: true,
     message: "Leave deleted successfully",
+  });
+});
+
+// document category
+const getDocumentCategory = catchAsync(async (req, res, next) => {
+  const company_id = req.user?.company_id;
+  if (!company_id) {
+    return next(new AppError("company id not found", STATUS_CODE.NOT_FOUND));
+  }
+  const categories = await documentCategoryRepos.findAll({
+    where: { company_id },
+    order: [["createdAt", "DESC"]],
+  });
+  res.status(STATUS_CODE.OK).json({
+    status: true,
+    message: "Document categories fetched successfully",
+    data: categories,
+  });
+});
+
+const createDocumentCategory = catchAsync(async (req, res, next) => {
+  const company_id = req.user?.company_id;
+  if (!company_id) {
+    return next(new AppError("company id not found", STATUS_CODE.NOT_FOUND));
+  }
+  const { type } = req.body;
+  const category = await documentCategoryRepos.create({
+    type,
+    company_id,
+  });
+  res.status(STATUS_CODE.OK).json({
+    status: true,
+    message: "Document category created successfully",
+    data: category,
+  });
+});
+
+const getDocumentCategoryById = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+  if (!id || id === "undefined") {
+    return next(
+      new AppError("document category id not found", STATUS_CODE.NOT_FOUND)
+    );
+  }
+  const company_id = req.user?.company_id;
+  if (!company_id) {
+    return next(new AppError("company id not found", STATUS_CODE.NOT_FOUND));
+  }
+  const category = await documentCategoryRepos.findOne({
+    where: { id, company_id },
+  });
+  res.status(STATUS_CODE.OK).json({
+    status: true,
+    message: "Document category fetched successfully",
+    data: category,
+  });
+});
+
+const updateDocumentCategory = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+  if (!id || id === "undefined") {
+    return next(
+      new AppError("document category id not found", STATUS_CODE.NOT_FOUND)
+    );
+  }
+  const company_id = req.user?.company_id;
+  if (!company_id) {
+    return next(new AppError("company id not found", STATUS_CODE.NOT_FOUND));
+  }
+  const { type } = req.body;
+  const category = await documentCategoryRepos.findOne({
+    where: { id, company_id },
+  });
+  if (!category) {
+    return next(
+      new AppError("document category not found", STATUS_CODE.NOT_FOUND)
+    );
+  }
+  category.type = type;
+  await category.save();
+  res.status(STATUS_CODE.OK).json({
+    status: true,
+    message: "Document category updated successfully",
+    data: category,
+  });
+});
+
+const removeDocumentCagegory = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+  if (!id || id === "undefined") {
+    return next(
+      new AppError("document category id not found", STATUS_CODE.NOT_FOUND)
+    );
+  }
+  const company_id = req.user?.company_id;
+  if (!company_id) {
+    return next(new AppError("company id not found", STATUS_CODE.NOT_FOUND));
+  }
+  const category = await documentCategoryRepos.findOne({
+    where: { id, company_id },
+  });
+  if (!category) {
+    return next(
+      new AppError("document category not found", STATUS_CODE.NOT_FOUND)
+    );
+  }
+  await category.destroy();
+  res.status(STATUS_CODE.OK).json({
+    status: true,
+    message: "Document category deleted successfully",
   });
 });
 
@@ -477,4 +586,11 @@ module.exports = {
   getLeaveById,
   updateLeave,
   deleteLeave,
+
+  // document category
+  getDocumentCategory,
+  createDocumentCategory,
+  getDocumentCategoryById,
+  updateDocumentCategory,
+  removeDocumentCagegory,
 };

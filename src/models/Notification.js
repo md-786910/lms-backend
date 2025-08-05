@@ -1,36 +1,38 @@
-// models/Department.js
+// models/Leave.js
 const { Model } = require("sequelize");
 const { TABLE_MODEL_MAPPING, TABLE_NAME } = require("../constants/table");
 
 module.exports = (sequelize, DataTypes) => {
-  class Department extends Model {
+  class Notification extends Model {
     static associate(models) {}
   }
-  Department.init(
+  Notification.init(
     {
       company_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
       },
-      name: {
-        type: DataTypes.STRING,
+      user_id: {
+        type: DataTypes.INTEGER,
         allowNull: false,
       },
-      description: {
+      title: {
         type: DataTypes.STRING,
-        allowNull: true,
       },
-      prefix: {
+      message: {
         type: DataTypes.STRING,
-        allowNull: true,
+      },
+      read: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
       },
     },
     {
       sequelize,
-      modelName: TABLE_MODEL_MAPPING[TABLE_NAME.DEPARTMENT],
-      tableName: TABLE_NAME.DEPARTMENT,
+      modelName: TABLE_MODEL_MAPPING[TABLE_NAME.NOTIFICATION],
+      tableName: TABLE_NAME.NOTIFICATION,
       timestamps: true,
     }
   );
-  return Department;
+  return Notification;
 };

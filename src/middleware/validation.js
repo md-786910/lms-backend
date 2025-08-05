@@ -33,9 +33,9 @@ const postCheckArray = (schema) => {
   return (req, res, next) => {
     let postdata = req.body;
 
-    const { error, value } = schema.validate({ data: postdata });
+    const { error, value } = schema.validate(postdata);
 
-    if (error == undefined) {
+    if (!error) {
       next();
     } else {
       next(new AppError(error, 400));

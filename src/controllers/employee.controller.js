@@ -1,28 +1,99 @@
 const { STATUS_CODE } = require("../constants/statusCode");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
-const { employeeRepos } = require("../repository/base");
+const {
+  employeeRepos,
+  departmentRepos,
+  designationRepos,
+  employeeAddressRepos,
+  countryRepos,
+  employeeDocumentRepos,
+  companyRepos,
+  documentCategoryRepos,
+  fileRepos,
+  EmployeePersonalInformationRepos,
+  employeeSalaryRepos,
+  employeLeaveRepos,
+  activityRepos,
+  prefixRepos,
+} = require("../repository/base");
 const { generateToken } = require("../helpers/jwt");
 const eventEmitter = require("../events/eventEmitter");
 const eventObj = require("../events/events");
+const initEmployeeLeave = require("../repository/initEmployeeLeave");
 
 const createEmployee = catchAsync(async (req, res, next) => {
-  if (!req.body) {
-    return next(AppError("No data found", STATUS_CODE.OK));
+  const { company_id, country_id = 91 } = req.user;
+  if (!company_id) {
+    return next(
+      new AppError("Company ID is required", STATUS_CODE.BAD_REQUEST)
+    );
   }
-  const { company_id } = req.user;
   const employee = req.body;
-  const newEmployee = await employeeRepos.create({ ...employee, company_id });
+  const existingEmployee = await employeeRepos.findOne({
+    where: {
+      email: employee.email,
+    },
+    raw: true,
+  });
+
+  // employ is already exist
+  if (existingEmployee) {
+    return next(
+      new AppError(
+        "Employee with this email already exists with this company",
+        STATUS_CODE.BAD_REQUEST
+      )
+    );
+  }
+
+  // check employee already exist
+
+  const department = await departmentRepos.findByPk(employee.department_id, {
+    attributes: ["prefix"],
+    where: {
+      company_id,
+    },
+  });
+  const newEmployee = await employeeRepos.create({
+    ...employee,
+    country_id,
+    company_id,
+  });
+
+  const employee_no = `${department?.prefix ?? "EMP"}-${newEmployee?.id}`;
+  newEmployee.employee_no = employee_no;
+  await newEmployee.save();
 
   //@crate token to employe to verifed itself and crate own password
   const token = await generateToken({
     id: newEmployee.id,
     email: newEmployee.email,
     company_id,
+    role: "employee",
   });
 
   // @fire event to employe email
-  eventEmitter.emit(eventObj.REGISTER_EMPLOYE, { createEmployee, token });
+  eventEmitter.emit(eventObj.ADD_NEW_EMPLOYEE, {
+    employee: JSON.parse(JSON.stringify(newEmployee)),
+    token,
+  });
+
+  // activitu
+  await activityRepos.addActivity({
+    company_id,
+    employee_id: newEmployee.id,
+    title: `New employee ${newEmployee.first_name} added`,
+    message: "Employee created successfully",
+  });
+
+  // add leave to per employee
+  console.log("Start init leave for employee default");
+  await initEmployeeLeave({
+    company_id,
+    employee_id: newEmployee.id,
+  });
+
   res.status(STATUS_CODE.CREATED).json({
     success: true,
     message: "Employee created successfully",
@@ -30,117 +101,622 @@ const createEmployee = catchAsync(async (req, res, next) => {
   });
 });
 
+const getAllEmployees = catchAsync(async (req, res, next) => {
+  const { is_suspended = false } = req.query;
+
+  const { company_id } = req.user;
+  if (!company_id) {
+    return next(
+      new AppError("Company ID is required", STATUS_CODE.BAD_REQUEST)
+    );
+  }
+  let employees = await employeeRepos.findAll({
+    where: { company_id, is_suspended },
+    include: [
+      {
+        model: departmentRepos,
+        as: "department",
+      },
+      {
+        model: designationRepos,
+        as: "designation",
+      },
+      {
+        attributes: [
+          "id",
+          "leave_id",
+          "leave_count",
+          "leave_type",
+          "leave_used",
+          "leave_remaing",
+        ],
+        model: employeLeaveRepos,
+        as: "employee_leaves",
+      },
+    ],
+    order: [["createdAt", "DESC"]],
+  });
+
+  for (const key in employees) {
+    const department_id = employees[key].department_id;
+    let prefix = await prefixRepos.findOne({
+      attributes: ["name"],
+      where: {
+        company_id,
+        department_id,
+      },
+    });
+    prefix = prefix?.name ?? "EMP";
+    employees[key].employee_no = `${prefix}-${employees[key].id}`;
+  }
+
+  res.status(STATUS_CODE.OK).json({
+    success: true,
+    message: "Employees fetched successfully",
+    data: employees,
+  });
+});
+
+const getEmployeeById = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+  if (!id || id == undefined) {
+    return next(
+      new AppError("Employee ID is required", STATUS_CODE.BAD_REQUEST)
+    );
+  }
+  const { company_id } = req.user;
+  if (!company_id || company_id == undefined) {
+    return next(
+      new AppError("Company ID is required", STATUS_CODE.BAD_REQUEST)
+    );
+  }
+  const employee = await employeeRepos.findOne({
+    where: { id, company_id },
+    include: [
+      {
+        model: departmentRepos,
+        as: "department",
+      },
+      {
+        model: designationRepos,
+        as: "designation",
+      },
+    ],
+  });
+
+  res.status(STATUS_CODE.OK).json({
+    success: true,
+    message: "Employee fetched successfully",
+    data: employee,
+  });
+});
+
+// suspend employee
+const suspendEmployee = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+  if (!id || id == undefined) {
+    return next(
+      new AppError("Employee ID is required", STATUS_CODE.BAD_REQUEST)
+    );
+  }
+  const { company_id } = req.user;
+  if (!company_id) {
+    return next(
+      new AppError("Company ID is required", STATUS_CODE.BAD_REQUEST)
+    );
+  }
+
+  const employee = await employeeRepos.findOne({
+    where: { id, company_id },
+  });
+  if (!employee) {
+    return next(
+      new AppError(
+        "Employee not found with associated company",
+        STATUS_CODE.NOT_FOUND
+      )
+    );
+  }
+  employee.is_active = false;
+  employee.is_suspended = true;
+  employee.last_date_of_work = new Date();
+  await employee.save();
+  res.status(STATUS_CODE.OK).json({
+    success: true,
+    message: "Employee suspended successfully",
+    data: employee,
+  });
+});
+
+// basic info,address,documents,personal info ,salary,bank info, etc
+const getBasicInfoById = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+  if (!id || id == undefined) {
+    return next(
+      new AppError("Employee ID is required", STATUS_CODE.BAD_REQUEST)
+    );
+  }
+  const { company_id } = req.user;
+  if (!company_id) {
+    return next(
+      new AppError("Company ID is required", STATUS_CODE.BAD_REQUEST)
+    );
+  }
+
+  // Fetch basic info logic here
+  const employee = await employeeRepos.findOne({
+    where: { id, company_id },
+    include: [
+      {
+        model: departmentRepos,
+        as: "department",
+      },
+      {
+        model: designationRepos,
+        as: "designation",
+      },
+    ],
+  });
+
+  res.status(STATUS_CODE.OK).json({
+    success: true,
+    message: "Employee basic info fetched successfully",
+    data: employee,
+  });
+});
+
+const updateBasicInfoById = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+  if (!id || id == undefined) {
+    return next(
+      new AppError("Employee ID is required", STATUS_CODE.BAD_REQUEST)
+    );
+  }
+  const { company_id } = req.user;
+  if (!company_id) {
+    return next(
+      new AppError("Company ID is required", STATUS_CODE.BAD_REQUEST)
+    );
+  }
+
+  // Update employee with req.body data
+  const [upt, _] = await employeeRepos.upsert(
+    {
+      ...req.body,
+      company_id,
+      employee_id: id,
+    },
+    {
+      company_id,
+      employee_id: id,
+    }
+  );
+
+  res.status(STATUS_CODE.OK).json({
+    success: true,
+    message: "Employee basic info updated successfully",
+    data: upt,
+  });
+});
+
+// upload profile
+const uploadProfile = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+  if (!id || id == undefined) {
+    return next(
+      new AppError("Employee ID is required", STATUS_CODE.BAD_REQUEST)
+    );
+  }
+  const { company_id } = req.user;
+  if (!company_id) {
+    return next(
+      new AppError("Company ID is required", STATUS_CODE.BAD_REQUEST)
+    );
+  }
+
+  const employee = await employeeRepos.findOne({
+    where: { id, company_id },
+  });
+  if (!employee) {
+    return next(
+      new AppError(
+        "Employee not found with associated company",
+        STATUS_CODE.NOT_FOUND
+      )
+    );
+  }
+  employee.profile = req.body?.profile;
+  await employee.save();
+  res.status(STATUS_CODE.OK).json({
+    success: true,
+    message: "Employee profile uploaded successfully",
+    data: employee,
+  });
+});
+
+// addresss
+const getAddressById = catchAsync(async (req, res, next) => {
+  const { company_id } = req.user;
+  if (!company_id) {
+    return next(
+      new AppError("Company ID is required", STATUS_CODE.BAD_REQUEST)
+    );
+  }
+
+  const company = await companyRepos.findOne({
+    attributes: ["country_id"],
+    where: {
+      id: company_id,
+    },
+  });
+
+  const { id } = req.params;
+  const employeeAddress =
+    (await employeeAddressRepos.findOne({
+      where: {
+        company_id,
+        employee_id: id,
+      },
+    })) ?? {};
+
+  employeeAddress["country_id"] = company?.country_id;
+  res.status(STATUS_CODE.OK).json({
+    success: true,
+    message: "Employee address fetched successfully",
+    data: employeeAddress,
+  });
+});
+
+const updateAddressById = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+  if (!id || id == undefined) {
+    return next(
+      new AppError("Employee ID is required", STATUS_CODE.BAD_REQUEST)
+    );
+  }
+  const { company_id } = req.user;
+  if (!company_id) {
+    return next(
+      new AppError("Company ID is required", STATUS_CODE.BAD_REQUEST)
+    );
+  }
+
+  // Update employee with req.body data
+  const [upd, _] = await employeeAddressRepos.upsert(
+    {
+      ...req.body,
+      company_id,
+      employee_id: id,
+    },
+    {
+      company_id,
+      employee_id: id,
+    }
+  );
+
+  res.status(STATUS_CODE.OK).json({
+    success: true,
+    message: "Employee basic info updated successfully",
+    data: upd,
+  });
+});
+
+// document
+const getDocumentById = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+  if (!id || id == undefined) {
+    return next(
+      new AppError("Employee ID is required", STATUS_CODE.BAD_REQUEST)
+    );
+  }
+  const { company_id } = req.user;
+  if (!company_id) {
+    return next(
+      new AppError("Company ID is required", STATUS_CODE.BAD_REQUEST)
+    );
+  }
+  const employeeDocument = await employeeDocumentRepos.findAll({
+    where: { employee_id: id, company_id },
+    include: [
+      {
+        model: fileRepos,
+        as: "file",
+      },
+      {
+        model: documentCategoryRepos,
+        as: "document_category",
+      },
+    ],
+  });
+  res.status(STATUS_CODE.OK).json({
+    success: true,
+    message: "Employee document fetched successfully",
+    data: employeeDocument,
+  });
+});
+
+// upload document
+const uploadDocument = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+  if (!id || id == undefined) {
+    return next(
+      new AppError("Employee ID is required", STATUS_CODE.BAD_REQUEST)
+    );
+  }
+  const { company_id } = req.user;
+  if (!company_id) {
+    return next(
+      new AppError("Company ID is required", STATUS_CODE.BAD_REQUEST)
+    );
+  }
+
+  const documents = req.body;
+
+  for (const docs of documents) {
+    try {
+      const employeeDocument = await employeeDocumentRepos.create({
+        ...docs,
+        company_id,
+        employee_id: id,
+      });
+      console.log("creating document ", employeeDocument.id);
+    } catch (error) {
+      return next(
+        new AppError("Error creating document", STATUS_CODE.BAD_REQUEST)
+      );
+    }
+  }
+
+  res.status(STATUS_CODE.OK).json({
+    success: true,
+    message: "Employee document uploaded successfully",
+    data: [],
+  });
+});
+
+// delete document
+const deleteDocumentById = catchAsync(async (req, res, next) => {
+  const { id, employee_id } = req.params;
+  if (!id || id == undefined || employee_id === undefined) {
+    return next(
+      new AppError("Document ID is required", STATUS_CODE.BAD_REQUEST)
+    );
+  }
+  const { company_id } = req.user;
+  if (!company_id) {
+    return next(
+      new AppError("Company ID is required", STATUS_CODE.BAD_REQUEST)
+    );
+  }
+  const employeeDocument = await employeeDocumentRepos.destroy({
+    where: { employee_id, id, company_id },
+  });
+  res.status(STATUS_CODE.OK).json({
+    success: true,
+    message: "Employee document deleted successfully",
+    data: employeeDocument,
+  });
+});
+
+// personal information
+const getPersonalInfoById = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+  if (!id || id == undefined) {
+    return next(
+      new AppError("Employee ID is required", STATUS_CODE.BAD_REQUEST)
+    );
+  }
+  const { company_id } = req.user;
+  if (!company_id) {
+    return next(
+      new AppError("Company ID is required", STATUS_CODE.BAD_REQUEST)
+    );
+  }
+  const employeePersonalInfo = await EmployeePersonalInformationRepos.findOne({
+    where: { employee_id: id, company_id },
+  });
+  res.status(STATUS_CODE.OK).json({
+    success: true,
+    message: "Employee personal info fetched successfully",
+    data: employeePersonalInfo,
+  });
+});
+
+// update personal info
+const updatePersonalInfoById = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+  if (!id || id == undefined) {
+    return next(
+      new AppError("Employee ID is required", STATUS_CODE.BAD_REQUEST)
+    );
+  }
+  const { company_id } = req.user;
+  if (!company_id) {
+    return next(
+      new AppError("Company ID is required", STATUS_CODE.BAD_REQUEST)
+    );
+  }
+  const [employeePersonalInfo, created] =
+    await EmployeePersonalInformationRepos.upsert(
+      {
+        ...req.body,
+        company_id,
+        employee_id: id,
+      },
+      {
+        where: { employee_id: id, company_id },
+      }
+    );
+  res.status(STATUS_CODE.OK).json({
+    success: true,
+    message: "Employee personal info updated successfully",
+    data: employeePersonalInfo,
+  });
+});
+
+// salary
+const getSalaryById = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+  if (!id || id == undefined) {
+    return next(
+      new AppError("Employee ID is required", STATUS_CODE.BAD_REQUEST)
+    );
+  }
+  const { company_id } = req.user;
+  if (!company_id) {
+    return next(
+      new AppError("Company ID is required", STATUS_CODE.BAD_REQUEST)
+    );
+  }
+  const employeeSalary = await employeeSalaryRepos.findOne({
+    where: { employee_id: id, company_id },
+  });
+  res.status(STATUS_CODE.OK).json({
+    success: true,
+    message: "Employee salary fetched successfully",
+    data: employeeSalary,
+  });
+});
+
+const updateSalaryById = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+  if (!id || id == undefined) {
+    return next(
+      new AppError("Employee ID is required", STATUS_CODE.BAD_REQUEST)
+    );
+  }
+  const { company_id } = req.user;
+  if (!company_id) {
+    return next(
+      new AppError("Company ID is required", STATUS_CODE.BAD_REQUEST)
+    );
+  }
+  const [employeeSalary, created] = await employeeSalaryRepos.upsert(
+    {
+      ...req.body,
+      company_id,
+      employee_id: id,
+    },
+    {
+      where: { employee_id: id, company_id },
+    }
+  );
+  res.status(STATUS_CODE.OK).json({
+    success: true,
+    message: "Employee salary updated successfully",
+    data: employeeSalary,
+  });
+});
+
+// Leave
+const getLeaveById = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+  if (!id || id == undefined) {
+    return next(
+      new AppError("Employee ID is required", STATUS_CODE.BAD_REQUEST)
+    );
+  }
+  const { company_id } = req.user;
+  if (!company_id) {
+    return next(
+      new AppError("Company ID is required", STATUS_CODE.BAD_REQUEST)
+    );
+  }
+  const employeeLeave = await employeLeaveRepos.findAll({
+    attributes: [
+      "id",
+      "leave_id",
+      "leave_count",
+      "leave_type",
+      "leave_used",
+      "leave_remaing",
+    ],
+    where: { employee_id: id, company_id },
+    order: [["id", "ASC"]],
+  });
+  res.status(STATUS_CODE.OK).json({
+    success: true,
+    message: "Employee leave fetched successfully",
+    data: employeeLeave,
+  });
+});
+
+//update employee leave
+const updateEmployeeLeaveById = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+  if (!id || id == undefined) {
+    return next(
+      new AppError("Employee ID is required", STATUS_CODE.BAD_REQUEST)
+    );
+  }
+  const { company_id } = req.user;
+  if (!company_id) {
+    return next(
+      new AppError("Company ID is required", STATUS_CODE.BAD_REQUEST)
+    );
+  }
+  const employeLeaves = req.body;
+  for (leave of employeLeaves) {
+    const { id: leave_id, leave_balance_to_add = 0 } = leave;
+    const getEmpLeave = await employeLeaveRepos.findOne({
+      where: { employee_id: id, company_id, id: leave_id },
+      raw: true,
+    });
+
+    if (!getEmpLeave) {
+      return next(
+        new AppError("employee leave not found", STATUS_CODE.BAD_REQUEST)
+      );
+    }
+
+    if (getEmpLeave) {
+      // update new count
+      const new_update_leave =
+        parseInt(getEmpLeave?.leave_remaing || 0) +
+        parseInt(leave_balance_to_add);
+
+      if (new_update_leave < 0) {
+        return next(
+          new AppError(
+            `Leave count can't be less than 0 for ${getEmpLeave?.leave_type}`,
+            STATUS_CODE.BAD_REQUEST
+          )
+        );
+      }
+
+      await employeLeaveRepos.update(
+        { leave_remaing: new_update_leave },
+        { where: { employee_id: id, company_id, id: leave_id } }
+      );
+    }
+  }
+  res.status(STATUS_CODE.OK).json({
+    success: true,
+    message: "Employee leave updated successfully",
+    data: null,
+  });
+});
+
 module.exports = {
+  uploadProfile,
+  getLeaveById,
+  updateEmployeeLeaveById,
   createEmployee,
-  getAllEmployees: async (req, res) => {
-    try {
-      const employees = await Employee.findAll({
-        include: [
-          { model: Company, as: "company" },
-          { model: EmployeePersonalInformation, as: "personal_info" },
-        ],
-      });
+  getAllEmployees,
+  getEmployeeById,
+  suspendEmployee,
+  getBasicInfoById,
+  updateBasicInfoById,
+  getAddressById,
+  updateAddressById,
 
-      res.status(STATUS_CODE.OK).json({
-        success: true,
-        data: employees,
-      });
-    } catch (error) {
-      console.error("Get All Employees Error:", error);
-      res.status(STATUS_CODE.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Server error while fetching employees",
-      });
-    }
-  },
+  getDocumentById,
+  uploadDocument,
+  deleteDocumentById,
 
-  //  Get Employee by ID
-  getEmployeeById: async (req, res) => {
-    try {
-      const { id } = req.params;
+  getPersonalInfoById,
+  updatePersonalInfoById,
 
-      const employee = await Employee.findByPk(id, {
-        include: [
-          { model: Company, as: "company" },
-          { model: EmployeePersonalInformation, as: "personal_info" },
-        ],
-      });
-
-      if (!employee) {
-        return res.status(STATUS_CODE.NOT_FOUND).json({
-          success: false,
-          message: "Employee not found",
-        });
-      }
-
-      res.status(STATUS_CODE.OK).json({
-        success: true,
-        data: employee,
-      });
-    } catch (error) {
-      console.error("Get Employee by ID Error:", error);
-      res.status(STATUS_CODE.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Server error while fetching employee",
-      });
-    }
-  },
-
-  // Update Employee
-  updateEmployee: async (req, res) => {
-    try {
-      const { id } = req.params;
-      const data = req.body;
-
-      const employee = await Employee.findByPk(id);
-      if (!employee) {
-        return res.status(STATUS_CODE.NOT_FOUND).json({
-          success: false,
-          message: "Employee not found",
-        });
-      }
-
-      await employee.update(data);
-
-      res.status(STATUS_CODE.OK).json({
-        success: true,
-        message: "Employee updated successfully",
-        data: employee,
-      });
-    } catch (error) {
-      console.error("Update Employee Error:", error);
-      res.status(STATUS_CODE.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Server error while updating employee",
-      });
-    }
-  },
-
-  //  Delete Employee
-  deleteEmployee: async (req, res) => {
-    try {
-      const { id } = req.params;
-
-      const employee = await Employee.findByPk(id);
-      if (!employee) {
-        return res.status(STATUS_CODE.NOT_FOUND).json({
-          success: false,
-          message: "Employee not found",
-        });
-      }
-
-      await employee.destroy();
-
-      res.status(STATUS_CODE.OK).json({
-        success: true,
-        message: "Employee deleted successfully",
-      });
-    } catch (error) {
-      console.error("Delete Employee Error:", error);
-      res.status(STATUS_CODE.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Server error while deleting employee",
-      });
-    }
-  },
+  getSalaryById,
+  updateSalaryById,
 };

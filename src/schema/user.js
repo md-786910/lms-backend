@@ -21,8 +21,14 @@ const createNewPassword = Joi.object({
   token: Joi.string().required(),
 });
 
+const verifyEmployee = Joi.object({
+  password: Joi.string().min(6).max(128).required(),
+  token: Joi.string().required(),
+});
+
 module.exports = {
   login,
   forgotPassword,
   createNewPassword,
+  verifyEmployee,
 };
