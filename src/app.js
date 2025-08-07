@@ -2,7 +2,8 @@ const cookieParser = require("cookie-parser");
 const express = require("express");
 const statusMonitor = require("express-status-monitor");
 const cors = require("cors");
-
+const { exec } = require("child_process");
+const path = require("path");
 const { STATUS_CODE } = require("./constants/statusCode");
 const { globalErrorHandler } = require("./middleware/globalErrorHandler");
 const {
@@ -24,6 +25,7 @@ const dashboardRoute = require("./routes/dashboardRoute.route");
 const employeeDashboardRouter = require("./routes/employee/dashboard.route");
 const profileRouter = require("./routes/employee/profile.route");
 const notificationRouter = require("./routes/notification.route");
+const Pdf = require("./config/Pdf");
 
 // @ App initialization
 const app = express();
@@ -45,6 +47,12 @@ employeeRouter.use(cors(corsOptions));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cookieParser());
+
+// Set EJS as the view engine
+app.set("view engine", "ejs");
+
+// Set the views folder where EJS templates are located
+app.set("views", path.join(__dirname, "views"));
 
 // make static files accessible
 app.use("/uploads", express.static("uploads"));
@@ -86,6 +94,23 @@ app.get("/api/v1/country", async (req, res) => {
 
 app.get("/", (req, res) => {
   res.status(STATUS_CODE.OK).send("Welcome to the LMS App API");
+});
+
+// pdf
+app.get("/pdf", async (req, res) => {
+  try {
+    const month = 10;
+    const emp_id = 12;
+    const pdfPath = `${month}.pdf`;
+    const pd = await Pdf.create("pdf.ejs", {}, `document/${emp_id}/`, pdfPath);
+    res.send(pd);
+  } catch (error) {
+    res.json(error);
+  }
+  // exec(`weasyprint input.html output.pdf`, (err) => {
+  //   if (err) return res.status(500).send("Error generating PDF");
+  //   res.sendFile(__dirname + "/output.pdf");
+  // });
 });
 
 // notification

@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Payslip PDF Generator</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        background-color: #f8f9fa;
+        padding: 20px;
+        color: #333;
+      }
+
+      .container {
+        max-width: 1000px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+
+      /* Header Section */
+      .header {
+        background: white;
+        padding: 24px 32px;
+        border-bottom: 1px solid #e5e5e5;
+      }
+
+      .nav-tabs {
+        display: flex;
+        gap: 32px;
+        margin-bottom: 24px;
+      }
+
+      .nav-tab {
+        font-size: 16px;
+        font-weight: 500;
+        color: #6b7280;
+        cursor: pointer;
+        padding-bottom: 8px;
+        border-bottom: 2px solid transparent;
+      }
+
+      .nav-tab.active {
+        color: #2563eb;
+        border-bottom-color: #2563eb;
+      }
+
+      .header-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .month-selector {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        color: #374151;
+      }
+
+      .month-dropdown {
+        background: none;
+        border: none;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+      }
+
+      .header-actions {
+        display: flex;
+        gap: 16px;
+      }
+
+      .btn-link {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: #2563eb;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      /* Summary Section */
+      .summary-section {
+        padding: 32px;
+        display: flex;
+        gap: 48px;
+        align-items: center;
+      }
+
+      .chart-container {
+        position: relative;
+      }
+
+      .donut-chart {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: conic-gradient(#ef4444 0deg 144deg, #10b981 144deg 360deg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+      }
+
+      .donut-chart::before {
+        content: "";
+        width: 70px;
+        height: 70px;
+        background: white;
+        border-radius: 50%;
+        position: absolute;
+      }
+
+      .chart-label {
+        position: absolute;
+        z-index: 2;
+        text-align: center;
+        font-weight: 600;
+        color: #374151;
+      }
+
+      .chart-month {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .chart-year {
+        font-size: 16px;
+        margin-top: 2px;
+      }
+
+      .summary-details {
+        flex: 1;
+      }
+
+      .take-home {
+        margin-bottom: 24px;
+      }
+
+      .take-home-label {
+        font-size: 14px;
+        color: #6b7280;
+        margin-bottom: 4px;
+      }
+
+      .take-home-amount {
+        font-size: 32px;
+        font-weight: 700;
+        color: #111827;
+      }
+
+      .breakdown {
+        display: flex;
+        gap: 48px;
+      }
+
+      .breakdown-item {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .breakdown-label {
+        font-size: 12px;
+        color: #6b7280;
+        margin-bottom: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .breakdown-amount {
+        font-size: 18px;
+        font-weight: 600;
+      }
+
+      .deductions {
+        color: #ef4444;
+      }
+
+      .gross-pay {
+        color: #374151;
+      }
+
+      /* Company Info */
+      .company-info {
+        padding: 0 32px 24px;
+        border-bottom: 1px solid #e5e5e5;
+      }
+
+      .company-name {
+        font-size: 20px;
+        font-weight: 700;
+        color: #111827;
+        margin-bottom: 4px;
+      }
+
+      .company-address {
+        font-size: 14px;
+        color: #6b7280;
+      }
+
+      /* Payslip Details */
+      .payslip-details {
+        padding: 32px;
+      }
+
+      .payslip-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: #111827;
+        margin-bottom: 24px;
+      }
+
+      .employee-summary {
+        background: #f9fafb;
+        border-radius: 8px;
+        /* padding: 20px; */
+        margin-bottom: 32px;
+      }
+
+      .section-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #111827;
+        margin-bottom: 16px;
+      }
+
+      .employee-info-grid {
+        display: flex;
+        align-items: center;
+        gap: 120px;
+      }
+
+      .employee-left-column {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      /* emd */
+
+      .employee-right-column {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+      }
+      .info-row {
+        display: grid;
+        grid-template-columns: 160px 1fr; /* Fixed width for labels */
+        gap: 20px;
+        align-items: center;
+      }
+
+      .info-label {
+        font-size: 14px;
+        color: #6b7280;
+      }
+
+      .info-value {
+        font-size: 14px;
+        font-weight: 500;
+        color: #111827;
+      }
+
+      .net-pay-highlight {
+        background: #ecfdf5;
+        border: 1px solid #d1fae5;
+        border-radius: 8px;
+        padding: 16px;
+        text-align: center;
+        width: 200px;
+        min-width: 200px;
+      }
+
+      .net-pay-label {
+        font-size: 14px;
+        color: #065f46;
+        margin-bottom: 4px;
+      }
+
+      .net-pay-amount {
+        font-size: 28px;
+        font-weight: 700;
+        color: #047857;
+      }
+
+      .pay-details {
+        font-size: 12px;
+        color: #6b7280;
+        margin-top: 8px;
+      }
+
+      /* Earnings and Deductions Table */
+      .earnings-deductions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 32px;
+        margin-bottom: 32px;
+      }
+
+      .table-container {
+        background: #f9fafb;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      .table-header {
+        background: #f3f4f6;
+        padding: 12px 16px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #374151;
+        border-bottom: 1px solid #e5e7eb;
+      }
+
+      .table-content {
+        padding: 0;
+      }
+
+      .table-row {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr;
+        gap: 16px;
+        padding: 12px 16px;
+        border-bottom: 1px solid #e5e7eb;
+      }
+
+      .table-row:last-child {
+        border-bottom: none;
+      }
+
+      .table-row.total {
+        background: #f3f4f6;
+        font-weight: 600;
+        border-top: 2px solid #d1d5db;
+      }
+
+      .table-cell {
+        color: #374151;
+      }
+
+      .table-cell.amount {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        font-weight: 500;
+      }
+
+      /* Final Total */
+      .final-total {
+        background: #f0f9ff;
+        border: 2px solid #0ea5e9;
+        border-radius: 8px;
+        padding: 20px;
+        text-align: center;
+      }
+
+      .final-total-text {
+        font-size: 18px;
+        font-weight: 700;
+        color: #0c4a6e;
+      }
+
+      .final-amount {
+        color: #0369a1;
+      }
+
+      .amount-words {
+        font-size: 12px;
+        color: #64748b;
+        margin-top: 4px;
+        font-style: italic;
+      }
+
+      /* Print Styles */
+      @media print {
+        body {
+          background: white;
+          padding: 0;
+        }
+
+        .container {
+          box-shadow: none;
+          border-radius: 0;
+          max-width: none;
+        }
+
+        .header-actions {
+          display: none;
+        }
+      }
+
+      /* Responsive */
+      @media (max-width: 768px) {
+        .summary-section {
+          flex-direction: column;
+          text-align: center;
+          gap: 24px;
+        }
+
+        .breakdown {
+          justify-content: center;
+        }
+
+        .earnings-deductions {
+          grid-template-columns: 1fr;
+          gap: 24px;
+        }
+
+        .employee-info-grid {
+          grid-template-columns: 1fr;
+          gap: 16px;
+        }
+
+        .net-pay-highlight {
+          width: 100%;
+          min-width: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container" id="payslip-container">
+      <!-- Summary Section -->
+      <div class="summary-section">
+        <div class="chart-container">
+          <div class="donut-chart">
+            <div class="chart-label">
+              <div class="chart-month">JULY</div>
+              <div class="chart-year">2020</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="summary-details">
+          <div class="take-home">
+            <div class="take-home-amount" id="take-home-amount">₹61,157.00</div>
+          </div>
+
+          <div class="breakdown">
+            <div class="breakdown-item">
+              <div class="breakdown-label deductions">Deductions</div>
+              <div class="breakdown-amount deductions" id="deductions-amount">
+                ₹12,120.00
+              </div>
+            </div>
+            <div class="breakdown-item">
+              <div class="breakdown-label gross-pay">Gross Pay</div>
+              <div class="breakdown-amount gross-pay" id="gross-pay-amount">
+                ₹73,277.00
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="logo-container">
+          <img
+            src="data:image/png;base64,<%= logo %>"
+            alt="Logo"
+            class="logo"
+          />
+        </div>
+      </div>
+
+      <!-- Company Info -->
+      <div class="company-info">
+        <div class="company-name" id="company-name">
+          Leanport Software Pvt Ltd
+        </div>
+        <div class="company-address" id="company-address">
+          23 Int Street Anna Salai Chennai Tamil Nadu 600012 India
+        </div>
+      </div>
+
+      <!-- Payslip Details -->
+      <div class="payslip-details">
+        <div class="payslip-title" id="payslip-title">
+          Payslip for the month of July 2020
+        </div>
+
+        <div class="employee-summary">
+          <div class="section-title">Employee Pay Summary</div>
+          <div class="employee-info-grid">
+            <div>
+              <div class="employee-left-column">
+                <div class="info-row">
+                  <span class="info-label">Employee Name</span>
+                  <span class="info-value" id="employee-name"
+                    >Meera Krishnan, 2432</span
+                  >
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Designation</span>
+                  <span class="info-value" id="designation">Developer</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Pay Period</span>
+                  <span class="info-value" id="pay-period">July 2020</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">PF A/C Number</span>
+                  <span class="info-value" id="pf-number"
+                    >GU/FHP/3493098/548/7039843</span
+                  >
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Employee Net Pay</span>
+                  <span class="info-value" id="employee-net-pay-label"
+                    >₹61,157.00</span
+                  >
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Date of Joining</span>
+                  <span class="info-value" id="joining-date">02/02/2010</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Pay Date</span>
+                  <span class="info-value" id="pay-date">31/07/2020</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">ESI Number</span>
+                  <span class="info-value" id="esi-number">6788990007</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="employee-right-column">
+              <div class="net-pay-highlight">
+                <div class="net-pay-label">Employee Net Pay</div>
+                <div class="net-pay-amount" id="net-pay-amount">₹61,157.00</div>
+                <div class="pay-details" id="pay-details">
+                  Paid Days : 31 | LOP Days : 0
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Earnings and Deductions -->
+        <div class="earnings-deductions">
+          <div class="table-container">
+            <div class="table-content">
+              <div class="table-header table-row">
+                <div class="table-cell" style="font-weight: 600">Earnings</div>
+                <div class="table-cell amount" style="font-weight: 600">
+                  Amount
+                </div>
+                <div class="table-cell amount" style="font-weight: 600">
+                  YTD
+                </div>
+              </div>
+
+              <div class="table-row">
+                <div class="table-cell">Basic</div>
+                <div class="table-cell amount">₹32,955.00</div>
+                <div class="table-cell amount">₹93,405.00</div>
+              </div>
+              <div class="table-row">
+                <div class="table-cell">Basic Arrear</div>
+                <div class="table-cell amount">₹15,210.00</div>
+                <div class="table-cell amount">₹1,86,810.00</div>
+              </div>
+              <div class="table-row">
+                <div class="table-cell">House Rent Allowance</div>
+                <div class="table-cell amount">₹16,478.00</div>
+                <div class="table-cell amount">₹46,703.00</div>
+              </div>
+              <div class="table-row">
+                <div class="table-cell">House Rent Allowance Arrear</div>
+                <div class="table-cell amount">₹7,606.00</div>
+                <div class="table-cell amount">₹93,406.00</div>
+              </div>
+              <div class="table-row">
+                <div class="table-cell">Conveyance Allowance</div>
+                <div class="table-cell amount">₹500.00</div>
+                <div class="table-cell amount">₹2,000.00</div>
+              </div>
+              <div class="table-row">
+                <div class="table-cell">Transport Allowance</div>
+                <div class="table-cell amount">₹500.00</div>
+                <div class="table-cell amount">₹2,000.00</div>
+              </div>
+              <div class="table-row">
+                <div class="table-cell">Fixed Allowance</div>
+                <div class="table-cell amount">₹10,481.00</div>
+                <div class="table-cell amount">₹26,366.00</div>
+              </div>
+              <div class="table-row">
+                <div class="table-cell">Fixed Allowance Arrear</div>
+                <div class="table-cell amount">₹-10,453.00</div>
+                <div class="table-cell amount">₹60,332.00</div>
+              </div>
+              <div class="table-row total">
+                <div class="table-cell">Gross Earnings</div>
+                <div class="table-cell amount" id="gross-earnings">
+                  ₹73,277.00
+                </div>
+                <div class="table-cell amount"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <div class="table-content">
+              <div class="table-header table-row">
+                <div class="table-cell" style="font-weight: 600">
+                  Deductions
+                </div>
+                <div class="table-cell amount" style="font-weight: 600">
+                  Amount
+                </div>
+                <div class="table-cell amount" style="font-weight: 600">
+                  YTD
+                </div>
+              </div>
+              <div class="table-row">
+                <div class="table-cell">EPF Contribution</div>
+                <div class="table-cell amount">₹3,296.00</div>
+                <div class="table-cell amount">₹30,128.00</div>
+              </div>
+              <div class="table-row">
+                <div class="table-cell">Employee State Insurance</div>
+                <div class="table-cell amount">₹454.00</div>
+                <div class="table-cell amount">₹1,265.00</div>
+              </div>
+              <div class="table-row">
+                <div class="table-cell">Income Tax</div>
+                <div class="table-cell amount">₹8,370.00</div>
+                <div class="table-cell amount">₹18,458.00</div>
+              </div>
+              <div class="table-row total">
+                <div class="table-cell">Total Deductions</div>
+                <div class="table-cell amount" id="total-deductions">
+                  ₹12,120.00
+                </div>
+                <div class="table-cell amount"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Final Total -->
+        <div class="final-total">
+          <div class="final-total-text">
+            Total Net Payable
+            <span class="final-amount" id="final-net-pay">₹61,157.00</span>
+            <div class="amount-words">
+              (Indian Rupee Sixty-One Thousand One Hundred Fifty-Seven Only)
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Sample data structure for payslip generation
+      const payslipData = {
+        month: "July 2020",
+        company: {
+          name: "Zylker",
+          address: "23 Int Street Anna Salai Chennai Tamil Nadu 600012 India",
+        },
+        employee: {
+          name: "Meera Krishnan, 2432",
+          designation: "Developer",
+          joiningDate: "02/02/2010",
+          pfNumber: "GU/FHP/3493098/548/7039843",
+          esiNumber: "6788990007",
+        },
+        payPeriod: "July 2020",
+        payDate: "31/07/2020",
+        paidDays: 31,
+        lopDays: 0,
+        earnings: [
+          { name: "Basic", amount: 32955.0, ytd: 93405.0 },
+          { name: "Basic Arrear", amount: 15210.0, ytd: 186810.0 },
+          { name: "House Rent Allowance", amount: 16478.0, ytd: 46703.0 },
+          { name: "House Rent Allowance Arrear", amount: 7606.0, ytd: 93406.0 },
+          { name: "Conveyance Allowance", amount: 500.0, ytd: 2000.0 },
+          { name: "Transport Allowance", amount: 500.0, ytd: 2000.0 },
+          { name: "Fixed Allowance", amount: 10481.0, ytd: 26366.0 },
+          { name: "Fixed Allowance Arrear", amount: -10453.0, ytd: 60332.0 },
+        ],
+        deductions: [
+          { name: "EPF Contribution", amount: 3296.0, ytd: 30128.0 },
+          { name: "Employee State Insurance", amount: 454.0, ytd: 1265.0 },
+          { name: "Income Tax", amount: 8370.0, ytd: 18458.0 },
+        ],
+      };
+
+      // Helper function to format currency
+      function formatCurrency(amount) {
+        return new Intl.NumberFormat("en-IN", {
+          style: "currency",
+          currency: "INR",
+          minimumFractionDigits: 2,
+        }).format(amount);
+      }
+
+      // Helper function to convert number to words
+      function numberToWords(amount) {
+        // Simplified version - in real implementation you'd want a complete number to words converter
+        const words = {
+          61157: "Indian Rupee Sixty-One Thousand One Hundred Fifty-Seven Only",
+        };
+        return words[amount] || `(Amount: ${formatCurrency(amount)})`;
+      }
+
+      // Function to generate payslip with given data
+      function generatePayslip(data = payslipData) {
+        // Calculate totals
+        const grossEarnings = data.earnings.reduce(
+          (sum, item) => sum + item.amount,
+          0
+        );
+        const totalDeductions = data.deductions.reduce(
+          (sum, item) => sum + item.amount,
+          0
+        );
+        const netPay = grossEarnings - totalDeductions;
+
+        // Update summary section
+        document.getElementById("take-home-amount").textContent =
+          formatCurrency(netPay);
+        document.getElementById("deductions-amount").textContent =
+          formatCurrency(totalDeductions);
+        document.getElementById("gross-pay-amount").textContent =
+          formatCurrency(grossEarnings);
+
+        // Update company info
+        document.getElementById("company-name").textContent = data.company.name;
+        document.getElementById("company-address").textContent =
+          data.company.address;
+
+        // Update payslip title
+        document.getElementById(
+          "payslip-title"
+        ).textContent = `Payslip for the month of ${data.month}`;
+
+        // Update employee info
+        document.getElementById("employee-name").textContent =
+          data.employee.name;
+        document.getElementById("designation").textContent =
+          data.employee.designation;
+        document.getElementById("joining-date").textContent =
+          data.employee.joiningDate;
+        document.getElementById("pay-period").textContent = data.payPeriod;
+        document.getElementById("pay-date").textContent = data.payDate;
+        document.getElementById("pf-number").textContent =
+          data.employee.pfNumber;
+        document.getElementById("esi-number").textContent =
+          data.employee.esiNumber;
+        document.getElementById("employee-net-pay-label").textContent =
+          formatCurrency(netPay);
+        document.getElementById("net-pay-amount").textContent =
+          formatCurrency(netPay);
+        document.getElementById(
+          "pay-details"
+        ).textContent = `Paid Days : ${data.paidDays} | LOP Days : ${data.lopDays}`;
+
+        // Update final amounts
+        document.getElementById("gross-earnings").textContent =
+          formatCurrency(grossEarnings);
+        document.getElementById("total-deductions").textContent =
+          formatCurrency(totalDeductions);
+        document.getElementById("final-net-pay").textContent =
+          formatCurrency(netPay);
+
+        // Update amount in words
+        document.querySelector(".amount-words").textContent = numberToWords(
+          Math.round(netPay)
+        );
+      }
+
+      // Function to print payslip
+      function printPayslip() {
+        window.print();
+      }
+
+      // Function to download as PDF
+      function downloadPDF() {
+        // In a real implementation, you would use a library like jsPDF or html2pdf
+        // For now, we'll trigger print dialog
+        alert(
+          "PDF download functionality would be implemented using libraries like jsPDF or Puppeteer on the server side."
+        );
+        printPayslip();
+      }
+
+      // Month selector change handler
+      document
+        .getElementById("month-select")
+        .addEventListener("change", function (e) {
+          const selectedMonth = e.target.value;
+          // Update chart label
+          const [month, year] = selectedMonth.split(" ");
+          document.querySelector(".chart-month").textContent =
+            month.toUpperCase();
+          document.querySelector(".chart-year").textContent = year;
+
+          // In real implementation, you would fetch new data for the selected month
+          console.log("Selected month:", selectedMonth);
+        });
+
+      // Initialize the payslip
+      generatePayslip();
+
+      // API for external systems to generate payslips
+      window.PayslipGenerator = {
+        generate: generatePayslip,
+        print: printPayslip,
+        downloadPDF: downloadPDF,
+        setData: function (newData) {
+          Object.assign(payslipData, newData);
+          generatePayslip(payslipData);
+        },
+      };
+    </script>
+  </body>
+</html>

@@ -23,22 +23,27 @@ const departmentsData = [
   {
     name: "Engineering",
     description: "Software development and technical roles",
+    prefix: "ENG",
   },
   {
     name: "Design",
     description: "UI/UX and creative design roles",
+    prefix: "DES",
   },
   {
     name: "Sales",
     description: "Sales and business development roles",
+    prefix: "SALE",
   },
   {
     name: "Marketing",
     description: "Marketing and promotional activities",
+    prefix: "MARK",
   },
   {
     name: "HR",
     description: "Human resources and administration",
+    prefix: "HR",
   },
 ];
 
@@ -62,23 +67,15 @@ const designationsData = departmentsData.map((dept, index) => ({
 
 const leavesData = [
   {
-    type: "Annual Leave",
-    annual_days: 25,
-  },
-  {
     type: "Sick Leave",
     annual_days: 10,
   },
   {
-    type: "Personal Leave",
-    annual_days: 5,
+    type: "Earned Leave",
+    annual_days: 10,
   },
   {
-    type: "Maternity Leave",
-    annual_days: 90,
-  },
-  {
-    type: "Paternity Leave",
+    type: "Casual Leave",
     annual_days: 15,
   },
 ];
