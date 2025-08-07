@@ -14,7 +14,12 @@ module.exports.authenticateEmployee = async (req, res, next) => {
   try {
     const { path } = req;
     console.log({ employee: path });
-    const whitelist = ["/logout"];
+    const whitelist = [
+      "/user/login",
+      "/user/forgot-password",
+      "/user/reset-password",
+      "/user/verify-email",
+    ];
     if (whitelist.includes(path)) {
       next();
     } else {
@@ -65,7 +70,6 @@ module.exports.authenticateAdmin = async (req, res, next) => {
       "/user/forgot-password",
       "/user/reset-password",
       "/user/verify-email",
-      "/employee",
     ];
     if (whitelist.includes(path)) {
       next();

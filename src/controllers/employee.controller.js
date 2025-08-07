@@ -284,11 +284,13 @@ const updateBasicInfoById = catchAsync(async (req, res, next) => {
     {
       ...req.body,
       company_id,
-      employee_id: id,
+      id,
     },
     {
-      company_id,
-      employee_id: id,
+      where: {
+        company_id,
+        id,
+      },
     }
   );
 

@@ -47,6 +47,10 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: true,
       },
+      password_without_hash: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
       is_active: {
         type: DataTypes.BOOLEAN,
         defaultValue: true,
@@ -57,7 +61,7 @@ module.exports = (sequelize, DataTypes) => {
       },
       role: {
         type: DataTypes.ENUM,
-        values: ["admin", "superadmin"],
+        values: ["admin", "light_admin"],
         defaultValue: "admin",
       },
     },

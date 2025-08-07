@@ -35,7 +35,9 @@ router.post("/upload", (req, res, next) => {
     }
     try {
       const fileIds = await uploadFiles(uploadedFiles);
-      return res.status(201).json({ fileIds });
+      return res
+        .status(201)
+        .json({ message: "File uploaded successfully", status: true, fileIds });
     } catch (uploadError) {
       console.error("Error handling file uploads:", uploadError);
       return res.status(500).json({

@@ -12,6 +12,14 @@ const login = Joi.object({
     .required(),
 });
 
+const createNewUser = Joi.object({
+  email: Joi.string().email().required(),
+  password: Joi.string().min(6).max(128).required(),
+  first_name: Joi.string().required(),
+  last_name: Joi.string().allow("", null),
+  phone_number: Joi.string().allow("", null),
+});
+
 const forgotPassword = Joi.object({
   email: Joi.string().email().required(),
 });
@@ -31,4 +39,5 @@ module.exports = {
   forgotPassword,
   createNewPassword,
   verifyEmployee,
+  createNewUser,
 };

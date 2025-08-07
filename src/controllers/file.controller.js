@@ -27,6 +27,7 @@ exports.uploadFiles = async (files) => {
           console.log(`Successfully deleted local file: ${filePath}`);
         }
       });
+
       return {
         file_id: resl.id,
         file_path: cloudinaryResponse.secure_url,
@@ -35,11 +36,12 @@ exports.uploadFiles = async (files) => {
       fs.unlink(filePath, (err) => {
         if (err) {
           console.error(`Error deleting local file: ${filePath}`, err);
+          throw new Error(err);
         } else {
           console.log(`Failed upload, but local file deleted: ${filePath}`);
         }
       });
-      throw new Error("Error uploading file to Cloudinary");
+      throw new Error(error);
     }
   });
 
@@ -47,6 +49,7 @@ exports.uploadFiles = async (files) => {
     const fileIds = await Promise.all(uploadPromises);
     return fileIds;
   } catch (error) {
+    console.log({ error });
     throw new Error(error.message);
   }
 };

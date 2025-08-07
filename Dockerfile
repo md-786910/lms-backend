@@ -3,6 +3,8 @@ FROM node:22-alpine
 # Set the working directory
 WORKDIR /usr/src/app
 
+RUN apk add chromium  tzdata curl
+
 # Copy package.json and package-lock.json
 COPY ./src/package.json /usr/src/app
 COPY ./src/package-lock.json /usr/src/app

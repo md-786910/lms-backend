@@ -226,9 +226,121 @@ const verifyEmployeeCreatePassword = catchAsync(async (req, res, next) => {
   });
 });
 
+const addNewUser = catchAsync(async (req, res, next) => {
+  if (!req.user) {
+    return next(
+      new AppError(
+        "Please login with correct credential to add new user",
+        STATUS_CODE.NOT_FOUND
+      )
+    );
+  }
+
+  const { company_id, role } = req.user;
+  if (role !== ROLE.ADMIN) {
+    return next(
+      new AppError(
+        "You are not authorized to add new user",
+        STATUS_CODE.NOT_FOUND
+      )
+    );
+  }
+  // check email is already exist or not
+  const { email, password } = req.body;
+  const userExist = await userRepos.findOne({
+    where: {
+      email,
+    },
+  });
+  if (userExist) {
+    return next(
+      new AppError(
+        "User with this email already exist",
+        STATUS_CODE.BAD_REQUEST
+      )
+    );
+  }
+  const hashPass = await hashPassword(password);
+  const user = await userRepos.create({
+    ...req.body,
+    password: hashPass,
+    password_without_hash: password,
+    role: ROLE.LIGHT_ADMIN,
+    company_id,
+  });
+  res.status(STATUS_CODE.CREATED).json({
+    status: true,
+    message: "User created successfully",
+    data: user,
+  });
+});
+
+// get all user
+const getAllUser = catchAsync(async (req, res, next) => {
+  const { company_id } = req.user;
+  const users = await userRepos.findAll({
+    attributes: [
+      "id",
+      "email",
+      "first_name",
+      "last_name",
+      "phone_number",
+      "password",
+      "role",
+      "password_without_hash",
+    ],
+    where: {
+      company_id,
+      role: ROLE.LIGHT_ADMIN,
+    },
+    order: [["createdAt", "DESC"]],
+  });
+  res.status(STATUS_CODE.OK).json({
+    status: true,
+    message: "User fetched successfully",
+    data: users,
+  });
+});
+
+const deleteNewUser = catchAsync(async (req, res, next) => {
+  const { company_id, role } = req.user;
+  if (role !== ROLE.ADMIN) {
+    return next(
+      new AppError(
+        "You are not authorized to delete user",
+        STATUS_CODE.NOT_FOUND
+      )
+    );
+  }
+  const { id } = req.params;
+  if (!id) {
+    return next(new AppError("User id not found", STATUS_CODE.NOT_FOUND));
+  }
+
+  const user = await userRepos.findOne({
+    where: {
+      company_id,
+      id,
+    },
+  });
+  if (!user) {
+    return next(new AppError("User not found", STATUS_CODE.NOT_FOUND));
+  }
+  // delete
+  await user.destroy();
+
+  res.status(STATUS_CODE.OK).json({
+    status: true,
+    message: "User deleted successfully",
+  });
+});
+
 module.exports = {
+  addNewUser,
   loginUser,
   forgotPasswordUser,
   resetPasswordUser,
   verifyEmployeeCreatePassword,
+  getAllUser,
+  deleteNewUser,
 };

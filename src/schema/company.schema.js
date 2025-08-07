@@ -28,6 +28,7 @@ const companyCreate = Joi.object({
       .required(),
     confirmPassword: Joi.string().valid(Joi.ref("password")).required(),
   }).required(),
+  password_without_hash: Joi.string().allow("", null),
 });
 const companyUpdate = Joi.object({
   logo: Joi.string().allow("", null),
