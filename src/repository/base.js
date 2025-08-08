@@ -40,7 +40,10 @@ const activityRepos = db[TABLE_MODEL_MAPPING[TABLE_NAME.ACTIVITY]];
 
 const notificationRepos = db[TABLE_MODEL_MAPPING[TABLE_NAME.NOTIFICATION]];
 
+const salaryHistoryRepos = db[TABLE_MODEL_MAPPING[TABLE_NAME.SALARY_HISTORY]];
+
 module.exports = {
+  salaryHistoryRepos,
   notificationRepos,
   activityRepos,
   employeLeaveRepos,

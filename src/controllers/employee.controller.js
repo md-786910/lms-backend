@@ -384,22 +384,24 @@ const updateAddressById = catchAsync(async (req, res, next) => {
   }
 
   // Update employee with req.body data
-  const [upd, _] = await employeeAddressRepos.upsert(
+  const [upd, created] = await employeeAddressRepos.upsert(
     {
-      ...req.body,
+      ...req.body, // Fields to insert or update
       company_id,
       employee_id: id,
     },
     {
-      company_id,
-      employee_id: id,
+      where: {
+        company_id,
+        employee_id: id,
+      },
     }
   );
+  console.log({ upd, created });
 
   res.status(STATUS_CODE.OK).json({
     success: true,
     message: "Employee basic info updated successfully",
-    data: upd,
   });
 });
 

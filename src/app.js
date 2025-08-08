@@ -17,6 +17,7 @@ const {
   fileRoute,
   companyEmployeeRoute,
   companyLeaveRoute,
+  companySalaryRoute,
 } = require("./routes");
 const { ENV_VARIABLE } = require("./constants/env");
 const { countryRepos } = require("./repository/base");
@@ -127,6 +128,7 @@ router.use("/dashboard", dashboardRoute);
 // employee routes
 router.use("/company/employee", companyEmployeeRoute);
 router.use("/company/leave", companyLeaveRoute);
+router.use("/company/salary", companySalaryRoute);
 router.use("/file", fileRoute);
 
 // for auth
