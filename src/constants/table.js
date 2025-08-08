@@ -26,6 +26,7 @@ const TABLE_NAME = {
   TEMPLATE: "templates",
 
   NOTIFICATION: "notifications",
+  SALARY_HISTORY: "salary_histories",
 };
 
 const TABLE_MODEL_MAPPING = {
@@ -56,6 +57,7 @@ const TABLE_MODEL_MAPPING = {
   [TABLE_NAME.TEMPLATE]: "Template",
 
   [TABLE_NAME.NOTIFICATION]: "Notification",
+  [TABLE_NAME.SALARY_HISTORY]: "SalaryHistory",
 };
 
 module.exports = {

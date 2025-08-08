@@ -5,6 +5,7 @@ const settingsRoute = require("./setting.route");
 const fileRoute = require("./file.route");
 const companyLeaveRoute = require("./company.leave.route");
 const dashboardRoute = require("./dashboardRoute.route");
+const companySalaryRoute = require("./company.salary.route");
 module.exports = {
   userRoute,
   companyRoute,
@@ -13,4 +14,5 @@ module.exports = {
   fileRoute,
   companyLeaveRoute,
   dashboardRoute,
+  companySalaryRoute,
 };
