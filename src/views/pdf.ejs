@@ -438,28 +438,29 @@
         <div class="chart-container">
           <div class="donut-chart">
             <div class="chart-label">
-              <div class="chart-month">JULY</div>
-              <div class="chart-year">2020</div>
+              <div class="chart-month"><%= month_name %></div>
+              <div class="chart-year"><%= year %></div>
             </div>
           </div>
         </div>
-
         <div class="summary-details">
           <div class="take-home">
-            <div class="take-home-amount" id="take-home-amount">₹61,157.00</div>
+            <div class="take-home-amount" id="take-home-amount">
+              <%= salary?.net_salary %>
+            </div>
           </div>
 
           <div class="breakdown">
             <div class="breakdown-item">
               <div class="breakdown-label deductions">Deductions</div>
               <div class="breakdown-amount deductions" id="deductions-amount">
-                ₹12,120.00
+                <%= salary?.deduction %>
               </div>
             </div>
             <div class="breakdown-item">
               <div class="breakdown-label gross-pay">Gross Pay</div>
               <div class="breakdown-amount gross-pay" id="gross-pay-amount">
-                ₹73,277.00
+                <%= salary?.salary %>
               </div>
             </div>
           </div>
@@ -476,17 +477,17 @@
       <!-- Company Info -->
       <div class="company-info">
         <div class="company-name" id="company-name">
-          Leanport Software Pvt Ltd
+          <%= company.company_name %>
         </div>
         <div class="company-address" id="company-address">
-          23 Int Street Anna Salai Chennai Tamil Nadu 600012 India
+          <%= company.address %>
         </div>
       </div>
 
       <!-- Payslip Details -->
       <div class="payslip-details">
         <div class="payslip-title" id="payslip-title">
-          Payslip for the month of July 2020
+          Payslip for the month of <%= pay_period %>
         </div>
 
         <div class="employee-summary">
@@ -496,22 +497,26 @@
               <div class="employee-left-column">
                 <div class="info-row">
                   <span class="info-label">Employee Name</span>
-                  <span class="info-value" id="employee-name"
-                    >Meera Krishnan, 2432</span
+                  <span class="info-value" id="employee-name">
+                    <%= employee?.first_name %> <%= employee?.last_name %></span
                   >
                 </div>
                 <div class="info-row">
                   <span class="info-label">Designation</span>
-                  <span class="info-value" id="designation">Developer</span>
+                  <span class="info-value" id="designation">
+                    <%= employee?.designation?.title %></span
+                  >
                 </div>
                 <div class="info-row">
                   <span class="info-label">Pay Period</span>
-                  <span class="info-value" id="pay-period">July 2020</span>
+                  <span class="info-value" id="pay-period">
+                    <%= pay_period %></span
+                  >
                 </div>
                 <div class="info-row">
                   <span class="info-label">PF A/C Number</span>
-                  <span class="info-value" id="pf-number"
-                    >GU/FHP/3493098/548/7039843</span
+                  <span class="info-value" id="pf-number">
+                    <%= employee?.EmployeePersonalInformation?.epf_no %></span
                   >
                 </div>
                 <div class="info-row">
@@ -522,15 +527,20 @@
                 </div>
                 <div class="info-row">
                   <span class="info-label">Date of Joining</span>
-                  <span class="info-value" id="joining-date">02/02/2010</span>
+                  <span class="info-value" id="joining-date">
+                    <%= new Date(employee?.date_of_joining).toLocaleDateString()
+                    %></span
+                  >
                 </div>
                 <div class="info-row">
                   <span class="info-label">Pay Date</span>
-                  <span class="info-value" id="pay-date">31/07/2020</span>
+                  <span class="info-value" id="pay-date"> <%= pay_date %></span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">ESI Number</span>
-                  <span class="info-value" id="esi-number">6788990007</span>
+                  <span class="info-value" id="esi-number">
+                    <%= employee?.EmployeePersonalInformation?.esic_no %></span
+                  >
                 </div>
               </div>
             </div>
@@ -538,9 +548,11 @@
             <div class="employee-right-column">
               <div class="net-pay-highlight">
                 <div class="net-pay-label">Employee Net Pay</div>
-                <div class="net-pay-amount" id="net-pay-amount">₹61,157.00</div>
+                <div class="net-pay-amount" id="net-pay-amount">
+                  <%= salary?.net_salary %>
+                </div>
                 <div class="pay-details" id="pay-details">
-                  Paid Days : 31 | LOP Days : 0
+                  Paid Days : <%= month_days %> | LOP Days : <%= total_leave %>
                 </div>
               </div>
             </div>
@@ -566,32 +578,32 @@
                 <div class="table-cell amount">₹32,955.00</div>
                 <div class="table-cell amount">₹93,405.00</div>
               </div>
-              <div class="table-row">
+              <!-- <div class="table-row">
                 <div class="table-cell">Basic Arrear</div>
                 <div class="table-cell amount">₹15,210.00</div>
                 <div class="table-cell amount">₹1,86,810.00</div>
-              </div>
+              </div> -->
               <div class="table-row">
                 <div class="table-cell">House Rent Allowance</div>
                 <div class="table-cell amount">₹16,478.00</div>
                 <div class="table-cell amount">₹46,703.00</div>
               </div>
-              <div class="table-row">
+              <!-- <div class="table-row">
                 <div class="table-cell">House Rent Allowance Arrear</div>
                 <div class="table-cell amount">₹7,606.00</div>
                 <div class="table-cell amount">₹93,406.00</div>
-              </div>
-              <div class="table-row">
+              </div> -->
+              <!-- <div class="table-row">
                 <div class="table-cell">Conveyance Allowance</div>
                 <div class="table-cell amount">₹500.00</div>
                 <div class="table-cell amount">₹2,000.00</div>
-              </div>
-              <div class="table-row">
+              </div> -->
+              <!-- <div class="table-row">
                 <div class="table-cell">Transport Allowance</div>
                 <div class="table-cell amount">₹500.00</div>
                 <div class="table-cell amount">₹2,000.00</div>
-              </div>
-              <div class="table-row">
+              </div> -->
+              <!-- <div class="table-row">
                 <div class="table-cell">Fixed Allowance</div>
                 <div class="table-cell amount">₹10,481.00</div>
                 <div class="table-cell amount">₹26,366.00</div>
@@ -600,7 +612,7 @@
                 <div class="table-cell">Fixed Allowance Arrear</div>
                 <div class="table-cell amount">₹-10,453.00</div>
                 <div class="table-cell amount">₹60,332.00</div>
-              </div>
+              </div> -->
               <div class="table-row total">
                 <div class="table-cell">Gross Earnings</div>
                 <div class="table-cell amount" id="gross-earnings">
@@ -629,7 +641,7 @@
                 <div class="table-cell amount">₹3,296.00</div>
                 <div class="table-cell amount">₹30,128.00</div>
               </div>
-              <div class="table-row">
+              <!-- <div class="table-row">
                 <div class="table-cell">Employee State Insurance</div>
                 <div class="table-cell amount">₹454.00</div>
                 <div class="table-cell amount">₹1,265.00</div>
@@ -638,7 +650,7 @@
                 <div class="table-cell">Income Tax</div>
                 <div class="table-cell amount">₹8,370.00</div>
                 <div class="table-cell amount">₹18,458.00</div>
-              </div>
+              </div> -->
               <div class="table-row total">
                 <div class="table-cell">Total Deductions</div>
                 <div class="table-cell amount" id="total-deductions">

@@ -58,9 +58,6 @@ module.exports = (sequelize, DataTypes) => {
       passport_no: {
         type: DataTypes.STRING,
       },
-      uan_no: {
-        type: DataTypes.STRING,
-      },
     },
     {
       sequelize,

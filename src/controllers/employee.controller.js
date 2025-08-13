@@ -133,6 +133,10 @@ const getAllEmployees = catchAsync(async (req, res, next) => {
         model: employeLeaveRepos,
         as: "employee_leaves",
       },
+      {
+        model: employeeAddressRepos,
+        as: "address",
+      },
     ],
     order: [["createdAt", "DESC"]],
   });
@@ -382,22 +386,35 @@ const updateAddressById = catchAsync(async (req, res, next) => {
       new AppError("Company ID is required", STATUS_CODE.BAD_REQUEST)
     );
   }
+  console.log(req.body);
 
   // Update employee with req.body data
-  const [upd, created] = await employeeAddressRepos.upsert(
-    {
-      ...req.body, // Fields to insert or update
+  const addressExist = await employeeAddressRepos.findOne({
+    where: {
       company_id,
       employee_id: id,
     },
-    {
-      where: {
-        company_id,
-        employee_id: id,
+  });
+  if (!addressExist) {
+    await employeeAddressRepos.create({
+      ...req.body,
+      company_id,
+      employee_id: id,
+    });
+  } else {
+    // update
+    await employeeAddressRepos.update(
+      {
+        ...req.body,
       },
-    }
-  );
-  console.log({ upd, created });
+      {
+        where: {
+          company_id,
+          employee_id: id,
+        },
+      }
+    );
+  }
 
   res.status(STATUS_CODE.OK).json({
     success: true,
@@ -540,21 +557,38 @@ const updatePersonalInfoById = catchAsync(async (req, res, next) => {
       new AppError("Company ID is required", STATUS_CODE.BAD_REQUEST)
     );
   }
-  const [employeePersonalInfo, created] =
-    await EmployeePersonalInformationRepos.upsert(
+
+  const personalExist = await EmployeePersonalInformationRepos.findOne({
+    where: {
+      company_id,
+      employee_id: id,
+    },
+  });
+
+  if (!personalExist) {
+    await EmployeePersonalInformationRepos.create({
+      ...req.body,
+      company_id,
+      employee_id: id,
+    });
+  } else {
+    await EmployeePersonalInformationRepos.update(
       {
         ...req.body,
-        company_id,
-        employee_id: id,
       },
       {
-        where: { employee_id: id, company_id },
+        where: {
+          company_id,
+          employee_id: id,
+        },
       }
     );
+  }
+
   res.status(STATUS_CODE.OK).json({
     success: true,
     message: "Employee personal info updated successfully",
-    data: employeePersonalInfo,
+    data: null,
   });
 });
 
@@ -595,20 +629,37 @@ const updateSalaryById = catchAsync(async (req, res, next) => {
       new AppError("Company ID is required", STATUS_CODE.BAD_REQUEST)
     );
   }
-  const [employeeSalary, created] = await employeeSalaryRepos.upsert(
-    {
-      ...req.body,
+  const salaryExist = await employeeSalaryRepos.findOne({
+    where: {
       company_id,
       employee_id: id,
     },
-    {
-      where: { employee_id: id, company_id },
-    }
-  );
+  });
+  if (!salaryExist) {
+    await employeeSalaryRepos.create({
+      ...req.body,
+      bonus: Number(req.body.bonus),
+      company_id,
+      employee_id: id,
+    });
+  } else {
+    await employeeSalaryRepos.update(
+      {
+        ...req.body,
+        bonus: Number(req.body.bonus),
+      },
+      {
+        where: {
+          company_id,
+          employee_id: id,
+        },
+      }
+    );
+  }
   res.status(STATUS_CODE.OK).json({
     success: true,
     message: "Employee salary updated successfully",
-    data: employeeSalary,
+    data: null,
   });
 });
 
@@ -661,7 +712,11 @@ const updateEmployeeLeaveById = catchAsync(async (req, res, next) => {
   }
   const employeLeaves = req.body;
   for (leave of employeLeaves) {
-    const { id: leave_id, leave_balance_to_add = 0 } = leave;
+    const {
+      id: leave_id,
+      leave_balance_to_add = 0,
+      leave_balance_to_subtract = 0,
+    } = leave;
     const getEmpLeave = await employeLeaveRepos.findOne({
       where: { employee_id: id, company_id, id: leave_id },
       raw: true,
@@ -678,8 +733,11 @@ const updateEmployeeLeaveById = catchAsync(async (req, res, next) => {
       const new_update_leave =
         parseInt(getEmpLeave?.leave_remaing || 0) +
         parseInt(leave_balance_to_add);
+      const new_update_leave_sub =
+        parseInt(getEmpLeave?.leave_used || 0) +
+        parseInt(leave_balance_to_subtract);
 
-      if (new_update_leave < 0) {
+      if (new_update_leave < 0 || new_update_leave_sub < 0) {
         return next(
           new AppError(
             `Leave count can't be less than 0 for ${getEmpLeave?.leave_type}`,
@@ -688,10 +746,18 @@ const updateEmployeeLeaveById = catchAsync(async (req, res, next) => {
         );
       }
 
-      await employeLeaveRepos.update(
-        { leave_remaing: new_update_leave },
-        { where: { employee_id: id, company_id, id: leave_id } }
-      );
+      if (leave_balance_to_add != 0) {
+        await employeLeaveRepos.update(
+          { leave_remaing: new_update_leave },
+          { where: { employee_id: id, company_id, id: leave_id } }
+        );
+      }
+      if (Math.abs(leave_balance_to_subtract) != 0) {
+        await employeLeaveRepos.update(
+          { leave_used: new_update_leave_sub },
+          { where: { employee_id: id, company_id, id: leave_id } }
+        );
+      }
     }
   }
   res.status(STATUS_CODE.OK).json({

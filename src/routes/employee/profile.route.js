@@ -13,7 +13,7 @@ profileRouter.route("/basic").get(getProfile);
 
 profileRouter.get("/address", getAddress);
 
-profileRouter.get("/perosnal-info", getPersonalInfo);
+profileRouter.get("/personal-info", getPersonalInfo);
 
 profileRouter.get("/document", getDocument);
 

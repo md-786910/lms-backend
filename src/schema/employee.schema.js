@@ -98,6 +98,7 @@ const updateEmployeeLeave = joi.array().items(
   joi.object({
     id: joi.number().required(),
     leave_balance_to_add: joi.number().required(),
+    leave_balance_to_subtract: joi.number().required(),
   })
 );
 

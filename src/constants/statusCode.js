@@ -26,5 +26,5 @@ module.exports.STATUS_CODE = Object.freeze({
   IM_USED: 226,
   RESET_CONTENT: 205,
   PARTIAL_CONTENT: 206,
-  CONTINUE: 100
+  CONTINUE: 100,
 });
