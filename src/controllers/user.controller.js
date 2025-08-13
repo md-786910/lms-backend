@@ -47,6 +47,7 @@ const loginUser = catchAsync(async (req, res, next) => {
     return next(new AppError("User not found", STATUS_CODE.NOT_FOUND));
   }
   //   verify password
+  console.log({ password, hash: user.password });
   const verifyPasswrd = await verifyHashPassword(password, user.password);
   if (!verifyPasswrd) {
     return next(new AppError("Invalid password", STATUS_CODE.BAD_REQUEST));

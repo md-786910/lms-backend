@@ -26,7 +26,7 @@ module.exports = (sequelize, DataTypes) => {
         defaultValue: false,
       },
       epf: {
-        type: DataTypes.FLOAT,
+        type: DataTypes.STRING,
         allowNull: true,
       },
       epf_pension: {

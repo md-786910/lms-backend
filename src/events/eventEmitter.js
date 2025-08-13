@@ -10,7 +10,7 @@ eventEmitter.on(eventObj.ADD_NEW_EMPLOYEE, async (data) => {
 
   const html = `<p>Welcome ${employee.first_name} ${employee.last_name},</p>
   <p>Your account has been created successfully. Please click the link below to set your password:</p>
-  <a href="${process.env.APP_URL}/employee/verify-email?token=${token}">Set Password</a>
+  <a href=${process.env.APP_URL}/employee/verify-email?token=${token}>Set Password</a>
   <p>If you did not create this account, please ignore this email.</p>
   <p>Thank you!</p>`;
 

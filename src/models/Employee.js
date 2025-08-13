@@ -19,6 +19,26 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "employee_id",
         as: "employee_leaves",
       });
+      this.hasOne(models[TABLE_MODEL_MAPPING[TABLE_NAME.EMPLOYEE_ADDRESS]], {
+        foreignKey: "employee_id",
+        sourceKey: "id",
+        as: "address",
+      });
+
+      this.hasOne(
+        models[TABLE_MODEL_MAPPING[TABLE_NAME.EMPLOYEE_PERSONAL_INFORMATION]],
+        {
+          foreignKey: "employee_id",
+          sourceKey: "id",
+          as: "personal_information",
+        }
+      );
+
+      this.hasOne(models[TABLE_MODEL_MAPPING[TABLE_NAME.EMPLOYEE_SALARY]], {
+        foreignKey: "employee_id",
+        sourceKey: "id",
+        as: "employee_salary",
+      });
     }
   }
   Employee.init(

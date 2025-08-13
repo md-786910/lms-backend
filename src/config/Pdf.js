@@ -52,7 +52,6 @@ class Pdf {
       });
 
       await page.setContent(html);
-
       const pdfOptions = {
         format: "A4",
         printBackground: true,
@@ -78,6 +77,7 @@ class Pdf {
 
   static async create(viewPath, data, folder, name) {
     try {
+      console.log({ folder });
       fs.mkdir(folder, { recursive: true }, (err) => {
         if (err) {
           console.error("Error creating directory:", err);
@@ -90,10 +90,10 @@ class Pdf {
         path: `${folder}${name}`,
       });
 
-      return 1;
+      return true;
     } catch (e) {
       console.log(e);
-      return 0;
+      return false;
     }
   }
 

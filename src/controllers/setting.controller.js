@@ -7,6 +7,9 @@ const {
   designationRepos,
   leaveRepos,
   documentCategoryRepos,
+  employeeRepos,
+  employeLeaveRepos,
+  employeeDocumentRepos,
 } = require("../repository/base");
 
 // GET all prefixes for the company
@@ -218,6 +221,22 @@ const deleteDepartment = catchAsync(async (req, res, next) => {
   if (!department) {
     return next(new AppError("department not found", STATUS_CODE.NOT_FOUND));
   }
+
+  // check department is already synced with company then cant delete only update/edit
+  const exist = await employeeRepos.findOne({
+    where: {
+      department_id: id,
+    },
+  });
+  if (exist) {
+    return next(
+      new AppError(
+        "department is already synced with company.you can edit instead",
+        STATUS_CODE.NOT_FOUND
+      )
+    );
+  }
+
   await department.destroy();
 
   res.status(STATUS_CODE.OK).json({
@@ -449,6 +468,21 @@ const deleteLeave = catchAsync(async (req, res, next) => {
   if (!leave) {
     return next(new AppError("leave not found", STATUS_CODE.NOT_FOUND));
   }
+
+  const exist = await employeLeaveRepos.findOne({
+    where: {
+      leave_id: id,
+    },
+  });
+  if (exist) {
+    return next(
+      new AppError(
+        "leave is already synced with employee.you can edit instead",
+        STATUS_CODE.NOT_FOUND
+      )
+    );
+  }
+
   await leave.destroy();
   res.status(STATUS_CODE.OK).json({
     status: true,
@@ -559,6 +593,21 @@ const removeDocumentCagegory = catchAsync(async (req, res, next) => {
       new AppError("document category not found", STATUS_CODE.NOT_FOUND)
     );
   }
+
+  const exist = await employeeDocumentRepos.findOne({
+    where: {
+      document_category_id: id,
+    },
+  });
+  if (exist) {
+    return next(
+      new AppError(
+        "document category is already synced with employee.you can edit instead",
+        STATUS_CODE.NOT_FOUND
+      )
+    );
+  }
+
   await category.destroy();
   res.status(STATUS_CODE.OK).json({
     status: true,

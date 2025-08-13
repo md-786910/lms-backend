@@ -4,7 +4,7 @@ export const apps = [
     script: "npm",
     args: "run dev",
     watch: true,
-    ignore_watch: ["node_modules", "logs", "uploads", "temp"],
+    ignore_watch: ["node_modules", "logs", "uploads", "temp", "document"],
     watch_options: {
       followSymlinks: false,
     },

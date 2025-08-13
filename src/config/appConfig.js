@@ -1,3 +1,4 @@
+const dayjs = require("dayjs");
 const { createLogger, format, transports } = require("winston");
 
 const developmentFormat = format.combine(
@@ -22,7 +23,12 @@ const logger = createLogger({
   ],
 });
 
-module.exports = {
-    logger,
+const convertToDate = (date) => {
+  const formattedDate = dayjs(date).format("DD/MM/YYYY");
+  return formattedDate;
+};
 
+module.exports = {
+  logger,
+  convertToDate,
 };
