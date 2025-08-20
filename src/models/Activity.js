@@ -1,7 +1,6 @@
 // models/Currency.js
 const { Model } = require("sequelize");
 const { TABLE_MODEL_MAPPING, TABLE_NAME } = require("../constants/table");
-const { activityRepos } = require("../repository/base");
 
 module.exports = (sequelize, DataTypes) => {
   class Activity extends Model {
@@ -9,12 +8,19 @@ module.exports = (sequelize, DataTypes) => {
 
     static async addActivity(data) {
       try {
-        const { company_id, employee_id, title, message = "" } = data;
+        const {
+          company_id,
+          employee_id,
+          title,
+          message = "",
+          role = "admin",
+        } = data;
         await sequelize.models.Activity.create({
           company_id,
           employee_id,
           title,
           message,
+          role,
         });
         return true;
       } catch (error) {
@@ -38,6 +44,10 @@ module.exports = (sequelize, DataTypes) => {
       },
       message: {
         type: DataTypes.STRING,
+      },
+      role: {
+        type: DataTypes.STRING,
+        defaultValue: "admin",
       },
     },
     {

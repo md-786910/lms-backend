@@ -200,10 +200,22 @@ exports.updateCompany = async (req, res) => {
         message: "No data found",
       });
     }
-    const { company_id } = req.user;
+    const { company_id, id } = req.user;
     if (!company_id) {
       return next(new AppError("company id not found", STATUS_CODE.NOT_FOUND));
     }
+
+    // update user phone number
+    await userRepos.update(
+      {
+        phone_number: req.body?.phone_number,
+      },
+      {
+        where: {
+          id,
+        },
+      }
+    );
 
     const [updated] = await companyRepos.update(req.body, {
       where: { id: company_id },

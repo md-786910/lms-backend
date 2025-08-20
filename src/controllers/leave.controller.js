@@ -3,6 +3,7 @@ const {
   employeeRepos,
   employeLeaveRepos,
   prefixRepos,
+  activityRepos,
 } = require("../repository/base");
 const catchAsync = require("../utils/catchAsync");
 const { Op } = require("sequelize");
@@ -116,6 +117,15 @@ const employeLeaveReject = catchAsync(async (req, res, next) => {
   leave.rejected_reason = rejected_reason;
   await leave.save();
 
+  // history
+  await activityRepos.addActivity({
+    company_id,
+    employee_id,
+    title: `Leave request rejected`,
+    message: "Leave request rejected successfully",
+    role: "employee",
+  });
+
   //   notify to employ with [email,notification]
   eventEmitter.emit(eventObj.REJECTED_LEAVE, {
     employee_id,
@@ -162,6 +172,13 @@ const employeLeaveApprove = catchAsync(async (req, res, next) => {
   leave.status = "approved";
   await leave.save();
 
+  await activityRepos.addActivity({
+    company_id,
+    employee_id,
+    title: `Leave request approved`,
+    message: "Leave request approved successfully",
+    role: "employee",
+  });
   //   notify to employ with [email,notification]
   eventEmitter.emit(eventObj.APPROVED_LEAVE, {
     employee_id,

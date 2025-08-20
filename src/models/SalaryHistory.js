@@ -2,9 +2,13 @@
 const { Model } = require("sequelize");
 const { TABLE_MODEL_MAPPING, TABLE_NAME } = require("../constants/table");
 const dayjs = require("dayjs");
-const { convertToDate } = require("../config/appConfig");
+const {
+  convertToDate,
+  formatPrice,
+  numberToWords,
+} = require("../config/appConfig");
 const Pdf = require("../config/Pdf");
-
+const year = dayjs().year();
 module.exports = (sequelize, DataTypes) => {
   class SalaryHistory extends Model {
     static associate(models) {
@@ -31,16 +35,34 @@ module.exports = (sequelize, DataTypes) => {
           EmployeePersonalInformation,
           SalaryHistory,
           EmployeeSalary,
+          LeaveRequest,
+          Notification,
+          Activity,
         } = sequelize.models;
         const company = await Company.findByPk(company_id, {
           attributes: ["company_name", "address"],
+          raw: true,
         });
 
-        // employee
+        // employee leave lequest
+        const leave_count = await LeaveRequest.findAll({
+          attributes: ["total_days"],
+          where: {
+            employee_id,
+            company_id,
+            status: "approved",
+          },
+        });
+
+        let total_leave = 0;
+        for (const leave of leave_count) {
+          total_leave += parseFloat(leave?.total_days || 0);
+        }
+        total_leave = total_leave.toFixed(1);
 
         // <%= pay_period %>
 
-        const employee = await Employee.findOne({
+        let employee = await Employee.findOne({
           attributes: ["first_name", "last_name", "date_of_joining"],
           where: {
             company_id,
@@ -74,7 +96,38 @@ module.exports = (sequelize, DataTypes) => {
             },
           ],
         });
-        const salary = await SalaryHistory.findOne({
+        employee = JSON.parse(JSON.stringify(employee));
+        const hraYTD = formatPrice(
+          current_month * parseFloat(employee.employee_salary.hra || 0)
+        );
+        // employee salary
+        let total_epf =
+          (employee.employee_salary?.epf_admin || 0) +
+          (employee.employee_salary?.epf_pension || 0);
+
+        employee.employee_salary.salary_with_allowance = formatPrice(
+          parseFloat(employee.employee_salary.salary_with_allowance) || 0
+        );
+        employee.employee_salary.total_allowance = formatPrice(
+          parseFloat(employee.employee_salary.total_allowance) || 0
+        );
+        employee.employee_salary.hra = formatPrice(
+          parseFloat(employee.employee_salary.hra) || 0
+        );
+        employee.employee_salary.bonus = formatPrice(
+          parseFloat(employee.employee_salary.bonus) || 0
+        );
+        employee.employee_salary.cca = formatPrice(
+          parseFloat(employee.employee_salary.cca) || 0
+        );
+        employee.employee_salary.epf_pension = formatPrice(
+          parseFloat(employee.employee_salary.epf_pension) || 0
+        );
+        employee.employee_salary.epf_admin = formatPrice(
+          parseFloat(employee.employee_salary.epf_admin) || 0
+        );
+
+        let salary = await SalaryHistory.findOne({
           attributes: ["base_salary", "deduction", "net_salary", "salary"],
           where: {
             company_id,
@@ -82,7 +135,20 @@ module.exports = (sequelize, DataTypes) => {
             month_in_digit: current_month,
           },
         });
+        salary = JSON.parse(JSON.stringify(salary));
+        const basicYTD = formatPrice(
+          current_month * parseFloat(salary.base_salary || 0)
+        );
+        const amount_in_inr = numberToWords(salary?.net_salary);
 
+        const epfYTD = formatPrice(current_month * total_epf);
+
+        // salary
+        salary.base_salary = formatPrice(salary.base_salary);
+        salary.deduction = formatPrice(salary.deduction);
+        salary.net_salary = formatPrice(salary.net_salary);
+        salary.salary = formatPrice(salary.salary);
+        console.log({ amount_in_inr });
         const result = {
           company,
           employee,
@@ -92,15 +158,44 @@ module.exports = (sequelize, DataTypes) => {
           month_name: month_name.toLocaleUpperCase(),
           year: dayjs().year(),
           month_days,
-          total_leave: 0,
+          total_epf: formatPrice(total_epf),
+          amount_in_inr,
+          basicYTD,
+          hraYTD,
+          epfYTD,
+          total_leave,
         };
         // generate pdf
-        const folder = `document/${employee_id}/${current_month}/`;
+        const folder = `document/${year}/${employee_id}/${current_month}/`;
         const name = "salary_slip.pdf";
         const pdf = await Pdf.create("pdf.ejs", result, folder, name);
         if (!pdf) {
           return false;
         }
+
+        // fire notification
+        await Notification.notifyUser({
+          user_id: employee_id,
+          company_id,
+          title:
+            "Your salary slip has been generated for the month of " +
+            month_name,
+          message:
+            "Your salary slip has been generated for the month of " +
+            month_name,
+          role: "employee",
+        });
+
+        await Activity.addActivity({
+          company_id,
+          employee_id,
+          title:
+            "Salary slip has been generated for the month of " + month_name,
+          message:
+            "Salary slip has been generated for the month of " + month_name,
+          role: "employee",
+        });
+
         return folder + name;
       } catch (error) {
         console.log({ error });
@@ -147,6 +242,9 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
       },
       month_in_digit: {
+        type: DataTypes.INTEGER,
+      },
+      year: {
         type: DataTypes.INTEGER,
       },
       salary_slip: {

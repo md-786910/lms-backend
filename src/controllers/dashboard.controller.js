@@ -9,6 +9,13 @@ const {
 const catchAsync = require("../utils/catchAsync");
 const dayjs = require("dayjs");
 const { Op } = require("sequelize");
+
+const utc = require("dayjs/plugin/utc");
+const timezone = require("dayjs/plugin/timezone");
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
 const getDashboard = catchAsync(async (req, res, next) => {
   const { company_id } = req.user;
   const total_employee = await employeeRepos.count({
@@ -20,15 +27,10 @@ const getDashboard = catchAsync(async (req, res, next) => {
     where: { company_id, is_suspended: false },
   });
 
-  //  on Leave today
-  const today = dayjs().startOf("day").toDate();
-  const tomorrow = dayjs().add(1, "day").startOf("day").toDate();
-
-  //
-  const startOfToday = dayjs().startOf("day").toDate(); // e.g., 2025-07-31T00:00:00+05:30
-  const endOfToday = dayjs().endOf("day").toDate(); // e.g., 2025-07-31T23:59:59+05:30
+  const startOfToday = dayjs().tz("Asia/Kolkata").startOf("day").toDate();
+  const endOfToday = dayjs().tz("Asia/Kolkata").endOf("day").toDate();
   let employeesOnLeaveToday = await leaveRequestRepos.findAll({
-    attributes: ["status"],
+    attributes: ["status", "start_date", "end_date", "total_days", "leave_on"],
     where: {
       company_id,
       status: "approved",
@@ -36,8 +38,6 @@ const getDashboard = catchAsync(async (req, res, next) => {
         { start_date: { [Op.lte]: endOfToday } },
         { end_date: { [Op.gte]: startOfToday } },
       ],
-      //   start_date: { [Op.gte]: today },
-      //   end_date: { [Op.lte]: today },
     },
     include: [
       {
@@ -80,6 +80,7 @@ const getDashboard = catchAsync(async (req, res, next) => {
   const activities = await activityRepos.findAll({
     where: {
       company_id,
+      // role: "admin",
     },
     limit: 4,
     order: [["createdAt", "DESC"]],

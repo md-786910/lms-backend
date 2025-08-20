@@ -38,12 +38,10 @@ class Pdf {
     }
     return Pdf.browser;
   }
-
   static async generatePdf(viewPath, data, options) {
     const browser = await Pdf.initBrowser();
     const page = await browser.newPage();
     page.setDefaultNavigationTimeout(0);
-
     try {
       viewPath = path.join(__dirname, `../views/${viewPath}`);
       const html = await ejs.renderFile(`${viewPath}`, {

@@ -33,6 +33,7 @@ const companyCreate = Joi.object({
 const companyUpdate = Joi.object({
   logo: Joi.string().allow("", null),
   company_website: Joi.string().allow("", null),
+  phone_number: Joi.string().allow("", null),
   tax_no: Joi.string().allow("", null),
   address: Joi.string().allow("", null),
   subscribe_newsletter: Joi.boolean().allow("", null),

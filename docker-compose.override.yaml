@@ -1,5 +1,5 @@
 services:
-   pgadmin:
+  pgadmin:
     image: dpage/pgadmin4:latest
     environment:
       PGADMIN_DEFAULT_EMAIL: mdashifreza111@gmail.com
@@ -11,6 +11,14 @@ services:
     volumes:
       - pgadmin_data:/var/lib/pgadmin
 
-
+  redisinsight:
+    image: redis/redisinsight:latest
+    ports:
+      - "5540:5540" # RedisInsight web UI port
+    depends_on:
+      - redis
+    volumes:
+      - redisinsight-data:/db
 volumes:
-  pgadmin_data:      
+  pgadmin_data:
+  redisinsight-data:

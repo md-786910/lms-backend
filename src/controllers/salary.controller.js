@@ -6,12 +6,12 @@ const {
 } = require("../repository/base");
 const catchAsync = require("../utils/catchAsync");
 const { Op } = require("sequelize");
-const dayjs = require("dayjs");
 const AppError = require("../utils/appError");
 const { STATUS_CODE } = require("../constants/statusCode");
 const db = require("../models");
+const dayjs = require("dayjs");
 const month_in_digit = dayjs().month() + 1;
-
+const year = dayjs().year();
 const salaryDashbaord = catchAsync(async (req, res, next) => {
   if (!req.query) {
     return next(new AppError("query not found", STATUS_CODE.NOT_FOUND));
@@ -67,20 +67,21 @@ const importSalartCurrentMonth = catchAsync(async (req, res, next) => {
   const month = dayjs().format("MMMM");
 
   // check in if current month is already gen dont gen
-  const monthSalaryExist = await salaryHistoryRepos.findOne({
-    where: {
-      company_id,
-      month_in_digit,
-    },
-  });
-  if (monthSalaryExist) {
-    return next(
-      new AppError(
-        `Salary already generated for ${month} month`,
-        STATUS_CODE.BAD_REQUEST
-      )
-    );
-  }
+  // const monthSalaryExist = await salaryHistoryRepos.findOne({
+  //   where: {
+  //     company_id,
+  //     month_in_digit,
+  //     year,
+  //   },
+  // });
+  // if (monthSalaryExist) {
+  //   return next(
+  //     new AppError(
+  //       `Salary already generated for ${month} month`,
+  //       STATUS_CODE.BAD_REQUEST
+  //     )
+  //   );
+  // }
 
   // fetch all employee salary with company
   const salary = await employeeSalaryRepos.findAll({
@@ -101,21 +102,51 @@ const importSalartCurrentMonth = catchAsync(async (req, res, next) => {
         base_salary,
         employee_id,
       } = sl;
-      await salaryHistoryRepos.create(
-        {
+
+      // check here
+      const salExistOrNot = await salaryHistoryRepos.findOne({
+        where: {
           company_id,
           employee_id,
+          year,
           month_in_digit,
-          month,
-          salary: salary_with_allowance || 0,
-          deduction: total_deduction_allowance || 0,
-          net_salary: payable_salary || 0,
-          bonus: bonus || 0,
-          base_salary: base_salary || 0,
-          total_allowance: total_allowance || 0,
         },
-        { transaction }
-      );
+        transaction,
+      });
+      if (salExistOrNot?.status === "paid") {
+        continue;
+      }
+
+      if (salExistOrNot?.status === "pending") {
+        await salaryHistoryRepos.update(
+          {
+            salary: salary_with_allowance || 0,
+            deduction: total_deduction_allowance || 0,
+            net_salary: payable_salary || 0,
+            bonus: bonus || 0,
+            base_salary: base_salary || 0,
+            total_allowance: total_allowance || 0,
+          },
+          { where: { id: salExistOrNot.id }, transaction }
+        );
+      } else {
+        await salaryHistoryRepos.create(
+          {
+            company_id,
+            employee_id,
+            month_in_digit,
+            month,
+            year,
+            salary: salary_with_allowance || 0,
+            deduction: total_deduction_allowance || 0,
+            net_salary: payable_salary || 0,
+            bonus: bonus || 0,
+            base_salary: base_salary || 0,
+            total_allowance: total_allowance || 0,
+          },
+          { transaction }
+        );
+      }
     }
     await transaction.commit();
   } catch (error) {
@@ -140,6 +171,7 @@ const getSalaryHistory = catchAsync(async (req, res, next) => {
   let where = {
     company_id,
     month_in_digit: month,
+    year,
   };
   if (status && status !== "all") {
     where.status = status;
@@ -171,7 +203,19 @@ const getSalaryHistory = catchAsync(async (req, res, next) => {
         ],
       },
     ],
-    order: [["createdAt", "DESC"]],
+    order: [
+      [
+        db.Sequelize.literal(`
+            CASE
+              WHEN status = 'pending' THEN 1
+              WHEN status = 'paid' THEN 2
+              ELSE 3
+            END
+          `),
+        "ASC",
+      ],
+      ["createdAt", "DESC"],
+    ],
   });
   res.status(200).json({
     status: true,
