@@ -20,6 +20,8 @@ const {
   getLeaveById,
   updateEmployeeLeaveById,
   uploadProfile,
+  resendInviteEmployee,
+  activateSuspendedEmployee,
 } = require("../controllers/employee.controller");
 const {
   addEmployee,
@@ -33,10 +35,15 @@ const {
 } = require("../schema/employee.schema");
 
 router.post("/add", joiValidation(addEmployee), createEmployee);
+
+// resend invite
+router.post("/resend-invite/:id", resendInviteEmployee);
+
 router.get("/", getAllEmployees);
 
 router.route("/:id").get(getEmployeeById);
 router.delete("/suspend-employee/:id", suspendEmployee);
+router.post("/activate-suspended-employee/:id", activateSuspendedEmployee);
 
 //basic info
 router

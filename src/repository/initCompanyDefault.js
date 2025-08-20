@@ -31,21 +31,10 @@ module.exports = async (company_id) => {
       );
     }
     // @default department
-    for (department of departmentsData) {
+    for (const department of departmentsData) {
       await departmentRepos.create(
         {
           ...department,
-          company_id,
-        },
-        { transaction }
-      );
-    }
-
-    // @default designation
-    for (const designation of designationsData) {
-      await designationRepos.create(
-        {
-          ...designation,
           company_id,
         },
         { transaction }
@@ -86,7 +75,26 @@ module.exports = async (company_id) => {
 
     // Templates
     await transaction.commit();
+
+    // @default designation
+    const departments = await departmentRepos.findAll({
+      attributes: ["id"],
+      where: {
+        company_id,
+      },
+      raw: true,
+    });
+    const departmentIds = departments?.map((department) => department?.id);
+    for (const designation of designationsData) {
+      await designationRepos.create({
+        ...designation,
+        department_id:
+          departmentIds[Math.floor(Math.random() * (departmentIds.length - 1))],
+        company_id,
+      });
+    }
   } catch (error) {
+    console.log({ error });
     await transaction.rollback();
     throw error;
   }

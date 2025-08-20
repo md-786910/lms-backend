@@ -27,6 +27,9 @@ const employeeDashboardRouter = require("./routes/employee/dashboard.route");
 const profileRouter = require("./routes/employee/profile.route");
 const notificationRouter = require("./routes/notification.route");
 const Pdf = require("./config/Pdf");
+const salaryRouter = require("./routes/employee/salary.route");
+const employeeFileRouter = require("./routes/employee/file.route");
+const adminFileRouter = require("./routes/admin.file.route");
 
 // @ App initialization
 const app = express();
@@ -43,6 +46,7 @@ const corsOptions = {
   credentials: true,
 };
 router.use(cors(corsOptions));
+app.use(cors(corsOptions));
 employeeRouter.use(cors(corsOptions));
 
 app.use(express.urlencoded({ extended: true }));
@@ -114,11 +118,11 @@ app.get("/pdf", async (req, res) => {
   // });
 });
 
-// notification
-app.use("/notification", notificationRouter);
+app.use("/api/v1/file", fileRoute);
 
 // admin routes (admin)
 router.use(authenticateAdmin);
+
 router.use("/company", companyRoute);
 router.use("/setting", settingsRoute);
 
@@ -129,16 +133,20 @@ router.use("/dashboard", dashboardRoute);
 router.use("/company/employee", companyEmployeeRoute);
 router.use("/company/leave", companyLeaveRoute);
 router.use("/company/salary", companySalaryRoute);
-router.use("/file", fileRoute);
 
 // for auth
 router.use("/user", userRoute);
+router.use("/notify", notificationRouter);
+router.use("/adminFile", adminFileRouter);
 
 //========================Employee router=================================================
 employeeRouter.use(authenticateEmployee);
 employeeRouter.use("/leave", leaveRouter);
+employeeRouter.use("/salary", salaryRouter);
 employeeRouter.use("/dashboard", employeeDashboardRouter);
 employeeRouter.use("/profile", profileRouter);
+employeeRouter.use("/notify", notificationRouter);
+employeeRouter.use("/employeFile", employeeFileRouter);
 // employeeRouter.use("/salary", leaveRouter);
 
 // Handling 404 errors

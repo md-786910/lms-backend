@@ -101,6 +101,46 @@ const createEmployee = catchAsync(async (req, res, next) => {
   });
 });
 
+// resend
+const resendInviteEmployee = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+  if (!id || id == undefined) {
+    return next(
+      new AppError("Employee ID is required", STATUS_CODE.BAD_REQUEST)
+    );
+  }
+  const { company_id } = req.user;
+  if (!company_id) {
+    return next(
+      new AppError("Company ID is required", STATUS_CODE.BAD_REQUEST)
+    );
+  }
+  const employee = await employeeRepos.findByPk(id);
+  if (!employee) {
+    return next(new AppError("Employee not found", STATUS_CODE.BAD_REQUEST));
+  }
+
+  //@crate token to employe to verifed itself and crate own password
+  const token = await generateToken({
+    id,
+    email: employee.email,
+    company_id,
+    role: "employee",
+  });
+
+  // @fire event to employe email
+  eventEmitter.emit(eventObj.ADD_NEW_EMPLOYEE, {
+    employee: JSON.parse(JSON.stringify(employee)),
+    token,
+  });
+
+  res.status(STATUS_CODE.OK).json({
+    success: true,
+    message: "Invite sent successfully",
+    data: null,
+  });
+});
+
 const getAllEmployees = catchAsync(async (req, res, next) => {
   const { is_suspended = false } = req.query;
 
@@ -136,6 +176,11 @@ const getAllEmployees = catchAsync(async (req, res, next) => {
       {
         model: employeeAddressRepos,
         as: "address",
+      },
+      {
+        attributes: ["payable_salary"],
+        model: employeeSalaryRepos,
+        as: "employee_salary",
       },
     ],
     order: [["createdAt", "DESC"]],
@@ -228,6 +273,42 @@ const suspendEmployee = catchAsync(async (req, res, next) => {
   res.status(STATUS_CODE.OK).json({
     success: true,
     message: "Employee suspended successfully",
+    data: employee,
+  });
+});
+
+const activateSuspendedEmployee = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+  if (!id || id == undefined) {
+    return next(
+      new AppError("Employee ID is required", STATUS_CODE.BAD_REQUEST)
+    );
+  }
+  const { company_id } = req.user;
+  if (!company_id) {
+    return next(
+      new AppError("Company ID is required", STATUS_CODE.BAD_REQUEST)
+    );
+  }
+
+  const employee = await employeeRepos.findOne({
+    where: { id, company_id },
+  });
+  if (!employee) {
+    return next(
+      new AppError(
+        "Employee not found with associated company",
+        STATUS_CODE.NOT_FOUND
+      )
+    );
+  }
+  employee.is_active = true;
+  employee.is_suspended = false;
+  employee.last_date_of_work = null;
+  await employee.save();
+  res.status(STATUS_CODE.OK).json({
+    status: true,
+    message: "Employee activated successfully",
     data: employee,
   });
 });
@@ -768,6 +849,7 @@ const updateEmployeeLeaveById = catchAsync(async (req, res, next) => {
 });
 
 module.exports = {
+  resendInviteEmployee,
   uploadProfile,
   getLeaveById,
   updateEmployeeLeaveById,
@@ -789,4 +871,5 @@ module.exports = {
 
   getSalaryById,
   updateSalaryById,
+  activateSuspendedEmployee,
 };

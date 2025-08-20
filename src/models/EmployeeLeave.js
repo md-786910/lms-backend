@@ -20,15 +20,15 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
       },
       leave_count: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.FLOAT,
         defaultValue: 0,
       },
       leave_remaing: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.FLOAT,
         defaultValue: 0,
       },
       leave_used: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.FLOAT,
         defaultValue: 0,
       },
       leave_type: {

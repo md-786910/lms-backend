@@ -54,15 +54,17 @@ const loginUser = catchAsync(async (req, res, next) => {
   }
 
   //   check admin or employe with company contains email
+  const company = await companyRepos.findOne({
+    attributes: ["id", "company_name", "logo"],
+    where: {
+      id: user.company_id,
+    },
+    raw: true,
+  });
+  if (!company) {
+    return next(new AppError("Company not found", STATUS_CODE.NOT_FOUND));
+  }
   if (user.role === ROLE.ADMIN) {
-    const company = await companyRepos.findOne({
-      where: {
-        id: user.company_id,
-      },
-    });
-    if (!company) {
-      return next(new AppError("Company not found", STATUS_CODE.NOT_FOUND));
-    }
     user = { ...user, company_id: company.id };
   } else if (user.role === ROLE.EMPLOYEE) {
     // check employe suspend or not
@@ -99,12 +101,11 @@ const loginUser = catchAsync(async (req, res, next) => {
     sameSite: "lax",
     maxAge: 7 * 24 * 60 * 60 * 1000, // ✅ 7 days in milliseconds
   });
-
   return res.status(STATUS_CODE.CREATED).json({
     status: true,
     message: "user login successfully",
     data: {
-      user,
+      user: { ...user, ...company },
       token,
     },
   });
@@ -118,7 +119,7 @@ const forgotPasswordUser = catchAsync(async (req, res, next) => {
   }
 
   // check employe suspend or not
-  if (user.is_suspended) {
+  if (user?.is_suspended) {
     return next(
       new AppError(
         "Your account is suspended.Please contact to admin",
@@ -142,9 +143,38 @@ const forgotPasswordUser = catchAsync(async (req, res, next) => {
   */
 
   const html = `
-  <h1>Forgot password will send here with token</h1>
-  <a href="http://localhost:8080/reset-password?token=${token}">Reset password</a>
-  `;
+  <div style="font-family: Arial, sans-serif; background-color: #f6f9fc; padding: 40px; color: #333;">
+    <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; margin: auto; background: #ffffff; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+      <tr>
+        <td style="padding: 30px; text-align: center; border-bottom: 1px solid #eee;">
+          <h2 style="margin: 0; color: #2a2a2a;">🔐 Password Reset Request</h2>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding: 30px; font-size: 15px; line-height: 1.6; color: #555;">
+          <p>Hello <strong>${user.name || "User"}</strong>,</p>
+          <p>We received a request to reset your password for your <strong>LMS Account</strong>. If this was you, click the button below to securely reset your password:</p>
+          <div style="text-align: center; margin: 25px 0;">
+            <a href="${process.env.APP_URL}/reset-password?token=${token}" 
+               style="background-color: #007BFF; color: #fff; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: bold; display: inline-block;">
+              Reset My Password
+            </a>
+          </div>
+          <p>If the button doesn’t work, copy and paste this link into your browser:</p>
+          <p style="word-break: break-all; color: #007BFF;">
+            ${process.env.APP_URL}/reset-password?token=${token}
+          </p>
+          <p><strong>Note:</strong> This link will expire in 30 minutes for security reasons.</p>
+          <p>If you did not request this, you can safely ignore this email.</p>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding: 20px; text-align: center; font-size: 12px; color: #888; border-top: 1px solid #eee;">
+          <p>© ${new Date().getFullYear()} LMS Platform. All rights reserved.</p>
+        </td>
+      </tr>
+    </table>
+  </div>`;
   await sendEmail({
     to: user.email,
     subject: "Reset password for lms account",
@@ -161,26 +191,30 @@ const forgotPasswordUser = catchAsync(async (req, res, next) => {
 const resetPasswordUser = catchAsync(async (req, res, next) => {
   const { password, token } = req.body;
   // validate token
-  const { id: user_id, role } = await verifyToken(token)?.sub;
+  const { id: user_id, role, company_id } = await verifyToken(token)?.sub;
+  console.log({ user_id, role, company_id, password, token });
+  const hashPass = await hashPassword(password);
   if (role === ROLE.ADMIN) {
     await userRepos.update(
       {
-        password: await hashPassword(password),
+        password: hashPass,
       },
       {
         where: {
           id: user_id,
+          company_id,
         },
       }
     );
   } else if (role === ROLE.EMPLOYEE) {
     await employeeRepos.update(
       {
-        password: await hashPassword(password),
+        password: hashPass,
       },
       {
         where: {
           id: user_id,
+          company_id,
         },
       }
     );

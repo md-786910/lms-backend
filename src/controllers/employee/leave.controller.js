@@ -5,10 +5,10 @@ const db = require("../../models");
 const {
   employeLeaveRepos,
   leaveRequestRepos,
+  activityRepos,
 } = require("../../repository/base");
 const AppError = require("../../utils/appError");
 const catchAsync = require("../../utils/catchAsync");
-
 const getAllLeave = catchAsync(async (req, res, next) => {
   const { id, company_id } = req.user;
   const leaves = await employeLeaveRepos.findAll({
@@ -65,7 +65,20 @@ const getAllLeaveRequest = catchAsync(async (req, res, next) => {
         as: "leave_type",
       },
     ],
-    order: [["createdAt", "DESC"]],
+    order: [
+      [
+        db.Sequelize.literal(`
+            CASE
+              WHEN status = 'pending' THEN 1
+              WHEN status = 'approved' THEN 2
+              WHEN status = 'rejected' THEN 3
+              ELSE 4
+            END
+          `),
+        "ASC",
+      ],
+      ["createdAt", "DESC"],
+    ],
   });
   res.status(200).json({
     status: true,
@@ -95,6 +108,29 @@ const createLeaveRequest = catchAsync(async (req, res, next) => {
     return next(
       new AppError(
         "Start date cannot be after end date",
+        STATUS_CODE.BAD_REQUEST
+      )
+    );
+  }
+
+  // cant apply leave on same date if already applied check from db
+
+  const leaveAppliedAlready = await leaveRequestRepos.findOne({
+    where: {
+      company_id,
+      employee_id,
+      leave_type_id,
+      [db.Sequelize.Op.or]: [
+        { start_date: { [db.Sequelize.Op.between]: [start, end] } },
+        { end_date: { [db.Sequelize.Op.between]: [start, end] } },
+      ],
+    },
+  });
+
+  if (leaveAppliedAlready) {
+    return next(
+      new AppError(
+        "You have already applied leave on this date",
         STATUS_CODE.BAD_REQUEST
       )
     );
@@ -172,6 +208,15 @@ const createLeaveRequest = catchAsync(async (req, res, next) => {
     reason,
   });
 
+  // history
+  await activityRepos.addActivity({
+    company_id,
+    employee_id,
+    title: `New ${leave_type} request applied`,
+    message: "Leave request applied successfully",
+    role: "employee",
+  });
+
   res.status(200).json({
     status: true,
     message: "Leave request applied successfully",
@@ -190,6 +235,18 @@ const cancelLeaveRequest = catchAsync(async (req, res, next) => {
   if (!leave) {
     return next(new AppError("Leave request not found", STATUS_CODE.NOT_FOUND));
   }
+
+  if (!["pending"].includes(leave?.status)) {
+    return next(new AppError("Leave request not found", STATUS_CODE.NOT_FOUND));
+  }
+
+  await activityRepos.addActivity({
+    company_id,
+    employee_id,
+    title: `Leave request cancelled`,
+    message: "Leave request cancelled successfully",
+    role: "employee",
+  });
   // remove
   await leave.destroy();
   res.status(200).json({

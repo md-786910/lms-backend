@@ -38,7 +38,7 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.DATE,
       },
       total_days: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.FLOAT,
       },
       leave_on: {
         type: DataTypes.JSONB,

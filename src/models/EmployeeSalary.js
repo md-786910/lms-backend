@@ -65,6 +65,9 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: true,
       },
+      upi_number: {
+        type: DataTypes.STRING,
+      },
       employee_id: {
         type: DataTypes.INTEGER,
         allowNull: false,

@@ -1,78 +1,107 @@
-// initSocket.js
 const { Server } = require("socket.io");
-// const Redis = require("ioredis"); // Optional: only if scaling
-// const redisAdapter = require("socket.io-redis"); // For Redis adapter if scaling
-
-// In-memory user-to-socket map (use Redis or DB for persistence if needed)
-const socketUserMap = new Map();
-
+const redisConfig = require("./redis");
+const redis = redisConfig.redisClient;
 let io;
 
 function initSocket(server) {
   io = new Server(server, {
     path: "/realtime",
     cors: {
-      origin: "*", // Change to your frontend domain
+      origin: "*", // TODO: restrict in production
       methods: ["GET", "POST"],
     },
   });
 
-  // Optional: Enable Redis adapter for scale-out
-  // const pubClient = new Redis();
-  // const subClient = new Redis();
-  // io.adapter(redisAdapter({ pubClient, subClient }));
+  io.on("connection", async (socket) => {
+    const socketId = socket.id;
+    const userId = socket.handshake.query.userId ?? null;
+    const companyId = socket.handshake.query.companyId ?? null;
 
-  io.on("connection", (socket) => {
-    console.log(`[Socket Connected] ID: ${socket.id}`);
+    console.log(
+      `[Socket Connected] ${socketId} user=${userId} company=${companyId}`
+    );
 
-    // Handle joining a company room
-    socket.on("joinCompany", (companyId) => {
-      socket.join(`company_${companyId}`);
-      console.log(`[Joined Room] company_${companyId}`);
-    });
+    if (!userId) {
+      console.warn(`❌ No userId provided. Disconnecting socket: ${socketId}`);
+      socket.disconnect(true);
+      return;
+    }
 
-    // Register user to track for direct messaging
-    socket.on("registerUser", (userId) => {
-      socketUserMap.set(userId, socket.id);
-      console.log(`[User Registered] userId=${userId}, socketId=${socket.id}`);
-    });
+    // Save mapping
+    await redis.set(`socket:${socketId}`, userId, { EX: 60 * 60 });
+    await redis.set(`user:${userId}:socket`, socketId);
 
-    // Handle client disconnection
-    socket.on("disconnect", (reason) => {
-      console.log(`[Socket Disconnected] ID: ${socket.id} | Reason: ${reason}`);
+    if (companyId) {
+      const existingSocketId = await redis.get(
+        `user:${userId}:company:${companyId}`
+      );
 
-      // Remove user from the map
-      for (let [userId, sId] of socketUserMap.entries()) {
-        if (sId === socket.id) {
-          socketUserMap.delete(userId);
-          console.log(`[User Unregistered] userId=${userId}`);
-          break;
+      if (existingSocketId) {
+        console.log(
+          `⚠️ User ${userId} already in company:${companyId}, skipping duplicate join.`
+        );
+        // Replace old socketId with new one
+        await redis.set(`user:${userId}:company:${companyId}`, socketId);
+      } else {
+        // First time join for this user+company
+        socket.join(`company:${companyId}`);
+        await redis.set(`user:${userId}:company:${companyId}`, socketId);
+        console.log(`✅ User ${userId} joined company:${companyId}`);
+      }
+    }
+
+    // Handle disconnect
+    socket.on("disconnect", async () => {
+      if (companyId) {
+        const mappedSocketId = await redis.get(
+          `user:${userId}:company:${companyId}`
+        );
+        if (mappedSocketId === socketId) {
+          await redis.del(`user:${userId}:company:${companyId}`);
+          console.log(`🔌 User ${userId} left company:${companyId}`);
         }
       }
+      await redis.del(`socket:${socketId}`);
+      await redis.del(`user:${userId}:socket`);
     });
 
-    // Handle any generic errors
-    socket.on("error", (err) => {
-      console.error(`[Socket Error] ID: ${socket.id}`, err);
+    // Handle socket errors
+    socket.on("error", (error) => {
+      console.error(`[Socket Error] ID: ${socketId}`, error);
     });
   });
 
   return io;
 }
 
-// Helper to emit to a company room
-function emitToCompany(companyId, event, data) {
-  if (!io) return;
-  io.to(`company_${companyId}`).emit(event, data);
+function getSocketIO() {
+  if (!io) {
+    throw new Error(
+      "Socket.IO not initialized. Call initSocket(server) first."
+    );
+  }
+  return io;
 }
 
-// Helper to emit to a specific user (if connected)
-function emitToUser(userId, event, data) {
-  const socketId = socketUserMap.get(userId);
-  if (socketId && io.sockets.sockets.get(socketId)) {
-    io.to(socketId).emit(event, data);
-  } else {
-    console.log(`[User Offline] userId=${userId} - Cannot emit ${event}`);
+// Broadcast to all sockets in a company room
+const emitToCompany = (companyId, event, payload) => {
+  getSocketIO().to(`company:${companyId}`).emit(event, payload);
+};
+
+// Emit to a specific user (single-socket mapping)
+async function emitToUser(userId, event, payload) {
+  try {
+    const socketId = await redis.get(`user:${userId}:socket`);
+    if (!socketId) return false;
+
+    const targetSocket = getSocketIO().sockets.sockets.get(socketId);
+    if (!targetSocket) return false;
+
+    targetSocket.emit(event, payload);
+    return true;
+  } catch (error) {
+    console.error("Error notifying user:", error);
+    return false;
   }
 }
 
