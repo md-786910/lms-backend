@@ -12,6 +12,7 @@ services:
       - 8000:8000
     environment:
       - NODE_ENV=development
+      - SERVER_ENV=development
       - PORT=8000
       - BABEL_DISABLE_CACHE=1
       - TZ=Europe/Amsterdam
