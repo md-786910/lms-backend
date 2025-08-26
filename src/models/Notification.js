@@ -3,6 +3,16 @@ const { Model } = require("sequelize");
 const { TABLE_MODEL_MAPPING, TABLE_NAME } = require("../constants/table");
 const { emitToUser } = require("../config/initsocket");
 
+const genUserId = (role, id) => {
+  if (role === "employee") {
+    return `employee_${id}`;
+  } else if (role === "admin") {
+    return `admin_${id}`;
+  } else if (role === "light_admin") {
+    return `light_admin_${id}`;
+  }
+};
+
 module.exports = (sequelize, DataTypes) => {
   class Notification extends Model {
     static associate(models) {}
@@ -27,7 +37,8 @@ module.exports = (sequelize, DataTypes) => {
         title,
         message,
       };
-      emitToUser(user_id, "notify:user", payload, {
+      const newUserId = genUserId(role, user_id);
+      await emitToUser(newUserId, "notify:user", payload, {
         message: payload.message,
       });
       return notification;

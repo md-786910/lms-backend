@@ -57,7 +57,7 @@ function initSocket(server) {
           `user:${userId}:company:${companyId}`
         );
         if (mappedSocketId === socketId) {
-          // await redis.del(`user:${userId}:company:${companyId}`);
+          await redis.del(`user:${userId}:company:${companyId}`);
           console.log(`🔌 User ${userId} left company:${companyId}`);
         }
       }
@@ -92,14 +92,11 @@ const emitToCompany = (companyId, event, payload) => {
 async function emitToUser(userId, event, payload) {
   try {
     const socketId = await redis.get(`user:${userId}:socket`);
-    console.log({ socketId, userId, payload, event });
     if (!socketId) return false;
 
     const targetSocket = getSocketIO().sockets.sockets.get(socketId);
-    console.log({ targetSocket });
     if (!targetSocket) return false;
 
-    console.log("send notification");
     targetSocket.emit(event, payload);
     return true;
   } catch (error) {
