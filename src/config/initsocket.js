@@ -92,7 +92,7 @@ const emitToCompany = (companyId, event, payload) => {
 async function emitToUser(userId, event, payload) {
   try {
     const socketId = await redis.get(`user:${userId}:socket`);
-    console.log({ socketId });
+    console.log({ socketId, userId, payload, event });
     if (!socketId) return false;
 
     const targetSocket = getSocketIO().sockets.sockets.get(socketId);
