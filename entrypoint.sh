@@ -1,13 +1,14 @@
 #!/bin/sh
 
-echo "Starting container with SERVER_ENV='$SERVER_ENV'"
+echo "Starting container with NODE_ENV='$NODE_ENV'"
 
+# Wait for dependencies (optional)
+# sleep 5
 
-if [ "$SERVER_ENV" = "development" ]; then
-  echo "Running in development mode with nodemon..."
-  pm2 start /usr/src/app/pm2.config.js
-
+if [ "$NODE_ENV" = "development" ]; then
+    echo "Running in development mode with PM2..."
+    exec pm2-runtime start /usr/src/app/pm2.config.js --env development
 else
-  echo "Running in production mode with pm2-runtime..."
-  exec pm2-runtime start /usr/src/app/pm2.config.js
+    echo "Running in production mode with PM2..."
+    exec pm2-runtime start /usr/src/app/pm2.config.js --env production
 fi
