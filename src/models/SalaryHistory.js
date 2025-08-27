@@ -169,6 +169,7 @@ module.exports = (sequelize, DataTypes) => {
         const folder = `document/${year}/${employee_id}/${current_month}/`;
         const name = "salary_slip.pdf";
         const pdf = await Pdf.create("pdf.ejs", result, folder, name);
+        console.log({ pdf });
         if (!pdf) {
           return false;
         }

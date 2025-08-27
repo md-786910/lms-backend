@@ -91,9 +91,10 @@ const emitToCompany = (companyId, event, payload) => {
 // Emit to a specific user (single-socket mapping)
 async function emitToUser(userId, event, payload) {
   try {
+    console.log({ userId, payload, event });
     const socketId = await redis.get(`user:${userId}:socket`);
     if (!socketId) return false;
-
+    console.log({ socketId });
     const targetSocket = getSocketIO().sockets.sockets.get(socketId);
     if (!targetSocket) return false;
 

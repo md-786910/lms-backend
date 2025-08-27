@@ -48,7 +48,7 @@ class Pdf {
         ...data,
         logo: base64Svg,
       });
-
+      console.log({ html });
       await page.setContent(html);
       const pdfOptions = {
         format: "A4",
@@ -65,6 +65,7 @@ class Pdf {
         },
         ...options,
       };
+      console.log({ pdfOptions });
       console.log("generaing pdf");
       const pdfBuffer = await page.pdf(pdfOptions);
       return pdfBuffer;
