@@ -2,6 +2,7 @@ const dayjs = require("dayjs");
 const express = require("express");
 const path = require("path");
 const fs = require("fs");
+const year = dayjs().year();
 const employeeFileRouter = express.Router();
 const month_in_digit = dayjs().month() + 1;
 // download file
@@ -17,14 +18,18 @@ employeeFileRouter.get("/download/:month", (req, res) => {
   const folderPath = path.join(
     __dirname,
     "../../document",
+    String(year),
     String(employee_id),
     String(month)
   );
+  console.log({ employee_id, month, folderPath });
   const filePath = path.join(folderPath, fileName);
+  console.log({ filePath });
 
   // Check if file exists
   fs.access(filePath, fs.constants.F_OK, (err) => {
     if (err) {
+      console.log({ err });
       return res.status(404).json({ error: "File not found" });
     }
 
