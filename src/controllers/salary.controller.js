@@ -248,6 +248,7 @@ const generateSalary = catchAsync(async (req, res, next) => {
   if (!result) {
     return next(new AppError("Salary not generated", STATUS_CODE.NOT_FOUND));
   }
+  console.log({ result });
   // generate pdf here
   salary.salary_slip = result;
   salary.status = "paid";

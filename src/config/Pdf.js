@@ -48,7 +48,6 @@ class Pdf {
         ...data,
         logo: base64Svg,
       });
-      console.log({ html });
       await page.setContent(html);
       const pdfOptions = {
         format: "A4",

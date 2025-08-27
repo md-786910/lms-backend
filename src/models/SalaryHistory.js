@@ -196,7 +196,7 @@ module.exports = (sequelize, DataTypes) => {
             "Salary slip has been generated for the month of " + month_name,
           role: "employee",
         });
-
+        console.log(folder + name);
         return folder + name;
       } catch (error) {
         console.log({ error });
