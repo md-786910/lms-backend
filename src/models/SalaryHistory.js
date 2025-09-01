@@ -21,7 +21,7 @@ module.exports = (sequelize, DataTypes) => {
 
     // generate pdf
     static async generatePDF(data) {
-      const { employee_id, company_id } = data;
+      const { employee_id, company_id, is_launched = false } = data;
       const pay_period = dayjs().format("MMMM YYYY");
       const pay_date = convertToDate(new Date());
       const current_month = dayjs().month() + 1;
@@ -168,8 +168,10 @@ module.exports = (sequelize, DataTypes) => {
         // generate pdf
         const folder = `document/${year}/${employee_id}/${current_month}/`;
         const name = "salary_slip.pdf";
-        const pdf = await Pdf.create("pdf.ejs", result, folder, name);
-        console.log({ pdf });
+        const pdf = is_launched
+          ? await Pdf.launch("pdf.ejs", result, folder, name)
+          : await Pdf.create("pdf.ejs", result, folder, name);
+        // const pdf = await Pdf.create("pdf.ejs", result, folder, name);
         if (!pdf) {
           return false;
         }
@@ -197,7 +199,11 @@ module.exports = (sequelize, DataTypes) => {
           role: "employee",
         });
         console.log(folder + name);
-        return folder + name;
+        if (is_launched) {
+          return pdf;
+        } else {
+          return folder + name;
+        }
       } catch (error) {
         console.log({ error });
         return false;

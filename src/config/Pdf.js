@@ -64,7 +64,6 @@ class Pdf {
         },
         ...options,
       };
-      console.log({ pdfOptions });
       console.log("generaing pdf");
       const pdfBuffer = await page.pdf(pdfOptions);
       return pdfBuffer;
@@ -97,7 +96,14 @@ class Pdf {
 
   static async launch(viewPath, data, folder) {
     try {
-      await fs.mkdir(folder, { recursive: true });
+      console.log({ launch_folder: folder });
+      fs.mkdir(folder, { recursive: true }, (err) => {
+        if (err) {
+          console.error("Error creating directory:", err);
+          return;
+        }
+        console.log("Directory created successfully");
+      });
       const pdfBuffer = await Pdf.generatePdf(viewPath, data);
       return pdfBuffer;
     } catch (e) {
