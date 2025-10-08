@@ -10,7 +10,9 @@ async function sendEmail({ to, subject, html, from = ENV_VARIABLE.SMTP_USER }) {
   //   process html with corect data mapping
   try {
     const info = await transporter.sendMail({
-      from: from || `"MyApp Support" <${ENV_VARIABLE.SMTP_USER}>`,
+      from:
+        `Leanport LMS <${from}>` ||
+        `"MyApp Support" <${ENV_VARIABLE.SMTP_USER}>`,
       to,
       subject,
       html,
