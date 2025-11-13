@@ -1,0 +1,3 @@
+# must be ended with a new line "LF" (Unix) and not "CRLF" (Windows)
+0 0 1 * * node /usr/src/app/automation/leaveGenerate.js >> /var/log/leaveGenerate.log 2>&1
+

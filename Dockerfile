@@ -16,6 +16,11 @@ RUN npm ci
 RUN npm install -g nodemon pm2
 # Copy the rest of the application code
 
+#setup cronjon
+COPY ./src/crontab /etc/crontabs/root
+RUN chmod 600 /etc/crontabs/root
+RUN touch /var/log/leaveGenerate.log && chmod 666 /var/log/leaveGenerate.log
+
 # permission to access the files with chown
 
 COPY --chown=node ./entrypoint.sh /usr/bin/

@@ -1,0 +1,756 @@
+running leaveGenerate.js
+running leaveGenerate.js
+running leaveGenerate.js
+running leaveGenerate.js
+running leaveGenerate.js
+running leaveGenerate.js
+running leaveGenerate.js
+running leaveGenerate.js
+running leaveGenerate.js
+[dotenv@17.2.0] injecting env (0) from .env (tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] })
+[2025-11-13 09:04:00] [32minfo[39m: Redis connection started
+[2025-11-13 09:04:00] [32minfo[39m: Initializing AppConfig...
+[2025-11-13 09:04:00] [32minfo[39m: Redis connection details: {"host":"redis","port":6379,"password":""}
+[2025-11-13 09:04:00] [32minfo[39m: info
+[2025-11-13 09:04:00] [32minfo[39m: Redis client created, connecting...
+[2025-11-13 09:04:00] [32minfo[39m: Initializing pub/sub client...
+[2025-11-13 09:04:00] [32minfo[39m: Redis pu/sub client connected...
+[2025-11-13 09:04:01] [31merror[39m: ❌ Redis client connection failed:
+[2025-11-13 09:04:01] [31merror[39m: ❌ Redis pub/sub connection failed:
+Error generating approved leave summary: ReferenceError: LeaveRequest is not defined
+    at generateApprovedLeaveSummary (/usr/src/app/automation/leaveGenerate.js:30:21)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+[dotenv@17.2.0] injecting env (0) from .env (tip: ⚙️  override existing env vars with { override: true })
+[2025-11-13 09:05:01] [32minfo[39m: Redis connection started
+[2025-11-13 09:05:01] [32minfo[39m: Initializing AppConfig...
+[2025-11-13 09:05:01] [32minfo[39m: Redis connection details: {"host":"redis","port":6379,"password":""}
+[2025-11-13 09:05:01] [32minfo[39m: info
+[2025-11-13 09:05:01] [32minfo[39m: Redis client created, connecting...
+[2025-11-13 09:05:01] [32minfo[39m: Initializing pub/sub client...
+[2025-11-13 09:05:01] [32minfo[39m: Redis pu/sub client connected...
+[2025-11-13 09:05:01] [31merror[39m: ❌ Redis client connection failed:
+[2025-11-13 09:05:01] [31merror[39m: ❌ Redis pub/sub connection failed:
+Error generating approved leave summary: Error
+    at Query.run (/usr/src/app/node_modules/sequelize/lib/dialects/postgres/query.js:50:25)
+    at /usr/src/app/node_modules/sequelize/lib/sequelize.js:315:28
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async PostgresQueryInterface.select (/usr/src/app/node_modules/sequelize/lib/dialects/abstract/query-interface.js:407:12)
+    at async LeaveRequest.findAll (/usr/src/app/node_modules/sequelize/lib/model.js:1140:21)
+    at async generateApprovedLeaveSummary (/usr/src/app/automation/leaveGenerate.js:33:21) {
+  name: 'SequelizeDatabaseError',
+  parent: error: column employee.name does not exist
+      at Parser.parseErrorMessage (/usr/src/app/node_modules/pg-protocol/dist/parser.js:285:98)
+      at Parser.handlePacket (/usr/src/app/node_modules/pg-protocol/dist/parser.js:122:29)
+      at Parser.parse (/usr/src/app/node_modules/pg-protocol/dist/parser.js:35:38)
+      at Socket.<anonymous> (/usr/src/app/node_modules/pg-protocol/dist/index.js:11:42)
+      at Socket.emit (node:events:519:28)
+      at addChunk (node:internal/streams/readable:561:12)
+      at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+      at Readable.push (node:internal/streams/readable:392:5)
+      at TCP.onStreamRead (node:internal/stream_base_commons:189:23) {
+    length: 112,
+    severity: 'ERROR',
+    code: '42703',
+    detail: undefined,
+    hint: undefined,
+    position: '108',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_relation.c',
+    line: '3722',
+    routine: 'errorMissingColumn',
+    sql: `SELECT "LeaveRequest"."employee_id", SUM("total_days") AS "total_leave", "employee"."id" AS "employee.id", "employee"."name" AS "employee.name" FROM "leave_requests" AS "LeaveRequest" LEFT OUTER JOIN "employees" AS "employee" ON "LeaveRequest"."employee_id" = "employee"."id" WHERE "LeaveRequest"."status" = 'approved' AND ("LeaveRequest"."start_date" >= '2025-09-30 22:00:00.000 +00:00' AND "LeaveRequest"."start_date" < '2025-10-31 23:00:00.000 +00:00') GROUP BY "employee_id", "employee"."id" ORDER BY total_leave DESC;`,
+    parameters: undefined
+  },
+  original: error: column employee.name does not exist
+      at Parser.parseErrorMessage (/usr/src/app/node_modules/pg-protocol/dist/parser.js:285:98)
+      at Parser.handlePacket (/usr/src/app/node_modules/pg-protocol/dist/parser.js:122:29)
+      at Parser.parse (/usr/src/app/node_modules/pg-protocol/dist/parser.js:35:38)
+      at Socket.<anonymous> (/usr/src/app/node_modules/pg-protocol/dist/index.js:11:42)
+      at Socket.emit (node:events:519:28)
+      at addChunk (node:internal/streams/readable:561:12)
+      at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+      at Readable.push (node:internal/streams/readable:392:5)
+      at TCP.onStreamRead (node:internal/stream_base_commons:189:23) {
+    length: 112,
+    severity: 'ERROR',
+    code: '42703',
+    detail: undefined,
+    hint: undefined,
+    position: '108',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_relation.c',
+    line: '3722',
+    routine: 'errorMissingColumn',
+    sql: `SELECT "LeaveRequest"."employee_id", SUM("total_days") AS "total_leave", "employee"."id" AS "employee.id", "employee"."name" AS "employee.name" FROM "leave_requests" AS "LeaveRequest" LEFT OUTER JOIN "employees" AS "employee" ON "LeaveRequest"."employee_id" = "employee"."id" WHERE "LeaveRequest"."status" = 'approved' AND ("LeaveRequest"."start_date" >= '2025-09-30 22:00:00.000 +00:00' AND "LeaveRequest"."start_date" < '2025-10-31 23:00:00.000 +00:00') GROUP BY "employee_id", "employee"."id" ORDER BY total_leave DESC;`,
+    parameters: undefined
+  },
+  sql: `SELECT "LeaveRequest"."employee_id", SUM("total_days") AS "total_leave", "employee"."id" AS "employee.id", "employee"."name" AS "employee.name" FROM "leave_requests" AS "LeaveRequest" LEFT OUTER JOIN "employees" AS "employee" ON "LeaveRequest"."employee_id" = "employee"."id" WHERE "LeaveRequest"."status" = 'approved' AND ("LeaveRequest"."start_date" >= '2025-09-30 22:00:00.000 +00:00' AND "LeaveRequest"."start_date" < '2025-10-31 23:00:00.000 +00:00') GROUP BY "employee_id", "employee"."id" ORDER BY total_leave DESC;`,
+  parameters: {}
+}
+[dotenv@17.2.0] injecting env (0) from .env (tip: ⚙️  enable debug logging with { debug: true })
+[2025-11-13 09:06:00] [32minfo[39m: Redis connection started
+[2025-11-13 09:06:00] [32minfo[39m: Initializing AppConfig...
+[2025-11-13 09:06:00] [32minfo[39m: Redis connection details: {"host":"redis","port":6379,"password":""}
+[2025-11-13 09:06:00] [32minfo[39m: info
+[2025-11-13 09:06:00] [32minfo[39m: Redis client created, connecting...
+[2025-11-13 09:06:00] [32minfo[39m: Initializing pub/sub client...
+[2025-11-13 09:06:00] [32minfo[39m: Redis pu/sub client connected...
+[2025-11-13 09:06:00] [31merror[39m: ❌ Redis client connection failed:
+[2025-11-13 09:06:00] [31merror[39m: ❌ Redis pub/sub connection failed:
+Month: 10/2025
+Name		Total Leave
+=================================
+No approved leaves in this period.
+Error creating database & tables: Error: ConnectionManager.getConnection was called after the connection manager was closed!
+    at ConnectionManager.getConnection (/usr/src/app/node_modules/sequelize/lib/dialects/abstract/connection-manager.js:70:13)
+    at /usr/src/app/node_modules/sequelize/lib/sequelize.js:305:111
+    at /usr/src/app/node_modules/retry-as-promised/dist/index.js:65:25
+    at new Promise (<anonymous>)
+    at retryAsPromised (/usr/src/app/node_modules/retry-as-promised/dist/index.js:54:12)
+    at Sequelize.query (/usr/src/app/node_modules/sequelize/lib/sequelize.js:300:12)
+    at PostgresQueryInterface.changeColumn (/usr/src/app/node_modules/sequelize/lib/dialects/abstract/query-interface.js:213:27)
+    at Activity.sync (/usr/src/app/node_modules/sequelize/lib/model.js:984:37)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async Sequelize.sync (/usr/src/app/node_modules/sequelize/lib/sequelize.js:377:9)
+[dotenv@17.2.0] injecting env (0) from .env (tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' })
+[2025-11-13 09:07:00] [32minfo[39m: Redis connection started
+[2025-11-13 09:07:00] [32minfo[39m: Initializing AppConfig...
+[2025-11-13 09:07:00] [32minfo[39m: Redis connection details: {"host":"redis","port":6379,"password":""}
+[2025-11-13 09:07:00] [32minfo[39m: info
+[2025-11-13 09:07:00] [32minfo[39m: Redis client created, connecting...
+[2025-11-13 09:07:00] [32minfo[39m: Initializing pub/sub client...
+[2025-11-13 09:07:00] [32minfo[39m: Redis pu/sub client connected...
+[2025-11-13 09:07:00] [31merror[39m: ❌ Redis client connection failed:
+[2025-11-13 09:07:00] [31merror[39m: ❌ Redis pub/sub connection failed:
+Month: 10/2025
+Name		Total Leave
+=================================
+No approved leaves in this period.
+Error creating database & tables: Error: ConnectionManager.getConnection was called after the connection manager was closed!
+    at ConnectionManager.getConnection (/usr/src/app/node_modules/sequelize/lib/dialects/abstract/connection-manager.js:70:13)
+    at /usr/src/app/node_modules/sequelize/lib/sequelize.js:305:111
+    at /usr/src/app/node_modules/retry-as-promised/dist/index.js:65:25
+    at new Promise (<anonymous>)
+    at retryAsPromised (/usr/src/app/node_modules/retry-as-promised/dist/index.js:54:12)
+    at Sequelize.query (/usr/src/app/node_modules/sequelize/lib/sequelize.js:300:12)
+    at PostgresQueryInterface.changeColumn (/usr/src/app/node_modules/sequelize/lib/dialects/abstract/query-interface.js:213:27)
+    at Activity.sync (/usr/src/app/node_modules/sequelize/lib/model.js:984:37)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async Sequelize.sync (/usr/src/app/node_modules/sequelize/lib/sequelize.js:377:9)
+[dotenv@17.2.0] injecting env (0) from .env (tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' })
+[2025-11-13 09:08:00] [32minfo[39m: Redis connection started
+[2025-11-13 09:08:00] [32minfo[39m: Initializing AppConfig...
+[2025-11-13 09:08:00] [32minfo[39m: Redis connection details: {"host":"redis","port":6379,"password":""}
+[2025-11-13 09:08:00] [32minfo[39m: info
+[2025-11-13 09:08:00] [32minfo[39m: Redis client created, connecting...
+[2025-11-13 09:08:00] [32minfo[39m: Initializing pub/sub client...
+[2025-11-13 09:08:00] [32minfo[39m: Redis pu/sub client connected...
+[2025-11-13 09:08:01] [31merror[39m: ❌ Redis client connection failed:
+[2025-11-13 09:08:01] [31merror[39m: ❌ Redis pub/sub connection failed:
+Month: 10/2025
+Name		Total Leave
+=================================
+No approved leaves in this period.
+Database synced successfully!
+[dotenv@17.2.0] injecting env (0) from .env (tip: ⚙️  enable debug logging with { debug: true })
+[2025-11-13 09:09:00] [32minfo[39m: Redis connection started
+[2025-11-13 09:09:00] [32minfo[39m: Initializing AppConfig...
+[2025-11-13 09:09:00] [32minfo[39m: Redis connection details: {"host":"redis","port":6379,"password":""}
+[2025-11-13 09:09:00] [32minfo[39m: info
+[2025-11-13 09:09:00] [32minfo[39m: Redis client created, connecting...
+[2025-11-13 09:09:00] [32minfo[39m: Initializing pub/sub client...
+[2025-11-13 09:09:00] [32minfo[39m: Redis pu/sub client connected...
+[2025-11-13 09:09:01] [31merror[39m: ❌ Redis client connection failed:
+[2025-11-13 09:09:01] [31merror[39m: ❌ Redis pub/sub connection failed:
+Month: 10/2025
+Name		Total Leave
+=================================
+No approved leaves in this period.
+Database synced successfully!
+[dotenv@17.2.0] injecting env (0) from .env (tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' })
+[2025-11-13 09:10:00] [32minfo[39m: Redis connection started
+[2025-11-13 09:10:00] [32minfo[39m: Initializing AppConfig...
+[2025-11-13 09:10:00] [32minfo[39m: Redis connection details: {"host":"redis","port":6379,"password":""}
+[2025-11-13 09:10:00] [32minfo[39m: info
+[2025-11-13 09:10:00] [32minfo[39m: Redis client created, connecting...
+[2025-11-13 09:10:00] [32minfo[39m: Initializing pub/sub client...
+[2025-11-13 09:10:00] [32minfo[39m: Redis pu/sub client connected...
+{
+  startDate: 2025-09-30T22:00:00.000Z,
+  endDate: 2025-10-31T23:00:00.000Z
+}
+[2025-11-13 09:10:01] [31merror[39m: ❌ Redis client connection failed:
+[2025-11-13 09:10:01] [31merror[39m: ❌ Redis pub/sub connection failed:
+Month: 10/2025
+Name		Total Leave
+=================================
+No approved leaves in this period.
+Database synced successfully!
+[dotenv@17.2.0] injecting env (0) from .env (tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild)
+[2025-11-13 09:11:00] [32minfo[39m: Redis connection started
+[2025-11-13 09:11:00] [32minfo[39m: Initializing AppConfig...
+[2025-11-13 09:11:00] [32minfo[39m: Redis connection details: {"host":"redis","port":6379,"password":""}
+[2025-11-13 09:11:00] [32minfo[39m: info
+[2025-11-13 09:11:00] [32minfo[39m: Redis client created, connecting...
+[2025-11-13 09:11:00] [32minfo[39m: Initializing pub/sub client...
+[2025-11-13 09:11:00] [32minfo[39m: Redis pu/sub client connected...
+{
+  startDate: 2025-09-30T22:00:00.000Z,
+  endDate: 2025-10-31T23:00:00.000Z
+}
+[2025-11-13 09:11:01] [31merror[39m: ❌ Redis client connection failed:
+[2025-11-13 09:11:01] [31merror[39m: ❌ Redis pub/sub connection failed:
+Month: 10/2025
+Name		Total Leave
+=================================
+Sohail Amir		1
+Database synced successfully!
+[dotenv@17.2.0] injecting env (0) from .env (tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`)
+[2025-11-13 09:12:00] [32minfo[39m: Redis connection started
+[2025-11-13 09:12:00] [32minfo[39m: Initializing AppConfig...
+[2025-11-13 09:12:00] [32minfo[39m: Redis connection details: {"host":"redis","port":6379,"password":""}
+[2025-11-13 09:12:00] [32minfo[39m: info
+[2025-11-13 09:12:00] [32minfo[39m: Redis client created, connecting...
+[2025-11-13 09:12:00] [32minfo[39m: Initializing pub/sub client...
+[2025-11-13 09:12:00] [32minfo[39m: Redis pu/sub client connected...
+{
+  startDate: 2025-09-30T22:00:00.000Z,
+  endDate: 2025-10-31T23:00:00.000Z
+}
+[2025-11-13 09:12:00] [31merror[39m: ❌ Redis client connection failed:
+[2025-11-13 09:12:00] [31merror[39m: ❌ Redis pub/sub connection failed:
+Month: 10/2025
+Name		Total Leave
+=================================
+Sohail Amir		1.5
+Database synced successfully!
+[dotenv@17.2.0] injecting env (0) from .env (tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' })
+[2025-11-13 09:13:00] [32minfo[39m: Redis connection started
+[2025-11-13 09:13:00] [32minfo[39m: Initializing AppConfig...
+[2025-11-13 09:13:00] [32minfo[39m: Redis connection details: {"host":"redis","port":6379,"password":""}
+[2025-11-13 09:13:00] [32minfo[39m: info
+[2025-11-13 09:13:00] [32minfo[39m: Redis client created, connecting...
+[2025-11-13 09:13:00] [32minfo[39m: Initializing pub/sub client...
+[2025-11-13 09:13:00] [32minfo[39m: Redis pu/sub client connected...
+[2025-11-13 09:13:00] [31merror[39m: ❌ Redis client connection failed:
+[2025-11-13 09:13:00] [31merror[39m: ❌ Redis pub/sub connection failed:
+Month: 10/2025
+Name		Total Leave
+=================================
+Sohail Amir		1.5
+Database synced successfully!
+[dotenv@17.2.0] injecting env (0) from .env (tip: ⚙️  enable debug logging with { debug: true })
+[2025-11-13 09:14:00] [32minfo[39m: Redis connection started
+[2025-11-13 09:14:00] [32minfo[39m: Initializing AppConfig...
+[2025-11-13 09:14:00] [32minfo[39m: Redis connection details: {"host":"redis","port":6379,"password":""}
+[2025-11-13 09:14:00] [32minfo[39m: info
+[2025-11-13 09:14:00] [32minfo[39m: Redis client created, connecting...
+[2025-11-13 09:14:00] [32minfo[39m: Initializing pub/sub client...
+[2025-11-13 09:14:00] [32minfo[39m: Redis pu/sub client connected...
+[2025-11-13 09:14:00] [31merror[39m: ❌ Redis client connection failed:
+[2025-11-13 09:14:00] [31merror[39m: ❌ Redis pub/sub connection failed:
+Month: 10/2025
+Name		Total Leave
+=================================
+Sohail Amir		1.5
+Database synced successfully!
+[dotenv@17.2.0] injecting env (0) from .env (tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] })
+[2025-11-13 09:15:00] [32minfo[39m: Redis connection started
+[2025-11-13 09:15:00] [32minfo[39m: Initializing AppConfig...
+[2025-11-13 09:15:00] [32minfo[39m: Redis connection details: {"host":"redis","port":6379,"password":""}
+[2025-11-13 09:15:00] [32minfo[39m: info
+[2025-11-13 09:15:00] [32minfo[39m: Redis client created, connecting...
+[2025-11-13 09:15:00] [32minfo[39m: Initializing pub/sub client...
+[2025-11-13 09:15:00] [32minfo[39m: Redis pu/sub client connected...
+[2025-11-13 09:15:00] [31merror[39m: ❌ Redis client connection failed:
+[2025-11-13 09:15:00] [31merror[39m: ❌ Redis pub/sub connection failed:
+Month: 10/2025
+Name		Total Leave
+=================================
+Sohail Amir		1.5
+Database synced successfully!
+[dotenv@17.2.0] injecting env (0) from .env (tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`)
+[2025-11-13 09:16:00] [32minfo[39m: Redis connection started
+[2025-11-13 09:16:00] [32minfo[39m: Initializing AppConfig...
+[2025-11-13 09:16:00] [32minfo[39m: Redis connection details: {"host":"redis","port":6379,"password":""}
+[2025-11-13 09:16:00] [32minfo[39m: info
+[2025-11-13 09:16:00] [32minfo[39m: Redis client created, connecting...
+[2025-11-13 09:16:00] [32minfo[39m: Initializing pub/sub client...
+[2025-11-13 09:16:00] [32minfo[39m: Redis pu/sub client connected...
+[2025-11-13 09:16:00] [31merror[39m: ❌ Redis client connection failed:
+[2025-11-13 09:16:00] [31merror[39m: ❌ Redis pub/sub connection failed:
+Month: 10/2025
+Name		Total Leave
+=================================
+Sohail Amir		1.5
+Database synced successfully!
+[dotenv@17.2.0] injecting env (0) from .env (tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`)
+[2025-11-13 09:17:00] [32minfo[39m: Redis connection started
+[2025-11-13 09:17:00] [32minfo[39m: Initializing AppConfig...
+[2025-11-13 09:17:00] [32minfo[39m: Redis connection details: {"host":"redis","port":6379,"password":""}
+[2025-11-13 09:17:00] [32minfo[39m: info
+[2025-11-13 09:17:00] [32minfo[39m: Redis client created, connecting...
+[2025-11-13 09:17:00] [32minfo[39m: Initializing pub/sub client...
+[2025-11-13 09:17:00] [32minfo[39m: Redis pu/sub client connected...
+[2025-11-13 09:17:00] [31merror[39m: ❌ Redis client connection failed:
+[2025-11-13 09:17:00] [31merror[39m: ❌ Redis pub/sub connection failed:
+Month: 10/2025
+Name		Total Leave
+=================================
+Sohail Amir		1.5
+Database synced successfully!
+[dotenv@17.2.0] injecting env (0) from .env (tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' })
+[2025-11-13 09:18:00] [32minfo[39m: Redis connection started
+[2025-11-13 09:18:00] [32minfo[39m: Initializing AppConfig...
+[2025-11-13 09:18:00] [32minfo[39m: Redis connection details: {"host":"redis","port":6379,"password":""}
+[2025-11-13 09:18:00] [32minfo[39m: info
+[2025-11-13 09:18:00] [32minfo[39m: Redis client created, connecting...
+[2025-11-13 09:18:00] [32minfo[39m: Initializing pub/sub client...
+[2025-11-13 09:18:00] [32minfo[39m: Redis pu/sub client connected...
+[2025-11-13 09:18:01] [31merror[39m: ❌ Redis client connection failed:
+[2025-11-13 09:18:01] [31merror[39m: ❌ Redis pub/sub connection failed:
+Month: 10/2025
+Name		Total Leave
+=================================
+Sohail Amir		1.5
+Database synced successfully!
+[dotenv@17.2.0] injecting env (0) from .env (tip: ⚙️  suppress all logs with { quiet: true })
+[2025-11-13 09:19:01] [32minfo[39m: Redis connection started
+[2025-11-13 09:19:01] [32minfo[39m: Initializing AppConfig...
+[2025-11-13 09:19:01] [32minfo[39m: Redis connection details: {"host":"redis","port":6379,"password":""}
+[2025-11-13 09:19:01] [32minfo[39m: info
+[2025-11-13 09:19:01] [32minfo[39m: Redis client created, connecting...
+[2025-11-13 09:19:01] [32minfo[39m: Initializing pub/sub client...
+[2025-11-13 09:19:01] [32minfo[39m: Redis pu/sub client connected...
+[2025-11-13 09:19:01] [31merror[39m: ❌ Redis client connection failed:
+[2025-11-13 09:19:01] [31merror[39m: ❌ Redis pub/sub connection failed:
+Month: 10/2025
+Name		Total Leave
+=================================
+Sohail Amir		1.5
+Database synced successfully!
+[dotenv@17.2.0] injecting env (0) from .env (tip: ⚙️  suppress all logs with { quiet: true })
+[2025-11-13 09:20:00] [32minfo[39m: Redis connection started
+[2025-11-13 09:20:00] [32minfo[39m: Initializing AppConfig...
+[2025-11-13 09:20:00] [32minfo[39m: Redis connection details: {"host":"redis","port":6379,"password":""}
+[2025-11-13 09:20:00] [32minfo[39m: info
+[2025-11-13 09:20:00] [32minfo[39m: Redis client created, connecting...
+[2025-11-13 09:20:00] [32minfo[39m: Initializing pub/sub client...
+[2025-11-13 09:20:00] [32minfo[39m: Redis pu/sub client connected...
+[2025-11-13 09:20:00] [31merror[39m: ❌ Redis client connection failed:
+[2025-11-13 09:20:00] [31merror[39m: ❌ Redis pub/sub connection failed:
+Month: 10/2025
+Name		Total Leave
+=================================
+Sohail Amir		1.5
+Database synced successfully!
+[dotenv@17.2.0] injecting env (0) from .env (tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] })
+[2025-11-13 09:21:00] [32minfo[39m: Redis connection started
+[2025-11-13 09:21:00] [32minfo[39m: Initializing AppConfig...
+[2025-11-13 09:21:00] [32minfo[39m: Redis connection details: {"host":"redis","port":6379,"password":""}
+[2025-11-13 09:21:00] [32minfo[39m: info
+[2025-11-13 09:21:01] [32minfo[39m: Redis client created, connecting...
+[2025-11-13 09:21:01] [32minfo[39m: Initializing pub/sub client...
+[2025-11-13 09:21:01] [32minfo[39m: Redis pu/sub client connected...
+node:internal/modules/cjs/loader:1386
+  throw err;
+  ^
+
+Error: Cannot find module '../utils/sendEmail'
+Require stack:
+- /usr/src/app/automation/leaveGenerate.js
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)
+    at Function._load (node:internal/modules/cjs/loader:1192:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Module.require (node:internal/modules/cjs/loader:1463:12)
+    at require (node:internal/modules/helpers:147:16)
+    at Object.<anonymous> (/usr/src/app/automation/leaveGenerate.js:6:23)
+    at Module._compile (node:internal/modules/cjs/loader:1706:14) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [ '/usr/src/app/automation/leaveGenerate.js' ]
+}
+
+Node.js v22.21.1
+[dotenv@17.2.0] injecting env (0) from .env (tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild)
+[2025-11-13 09:22:00] [32minfo[39m: Redis connection started
+[2025-11-13 09:22:00] [32minfo[39m: Initializing AppConfig...
+[2025-11-13 09:22:00] [32minfo[39m: Redis connection details: {"host":"redis","port":6379,"password":""}
+[2025-11-13 09:22:00] [32minfo[39m: info
+[2025-11-13 09:22:00] [32minfo[39m: Redis client created, connecting...
+[2025-11-13 09:22:00] [32minfo[39m: Initializing pub/sub client...
+[2025-11-13 09:22:00] [32minfo[39m: Redis pu/sub client connected...
+node:internal/modules/cjs/loader:1386
+  throw err;
+  ^
+
+Error: Cannot find module '../utils/sendEmail'
+Require stack:
+- /usr/src/app/automation/leaveGenerate.js
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)
+    at Function._load (node:internal/modules/cjs/loader:1192:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Module.require (node:internal/modules/cjs/loader:1463:12)
+    at require (node:internal/modules/helpers:147:16)
+    at Object.<anonymous> (/usr/src/app/automation/leaveGenerate.js:6:23)
+    at Module._compile (node:internal/modules/cjs/loader:1706:14) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [ '/usr/src/app/automation/leaveGenerate.js' ]
+}
+
+Node.js v22.21.1
+[dotenv@17.2.0] injecting env (0) from .env (tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' })
+[2025-11-13 09:23:00] [32minfo[39m: Redis connection started
+[2025-11-13 09:23:00] [32minfo[39m: Initializing AppConfig...
+[2025-11-13 09:23:00] [32minfo[39m: Redis connection details: {"host":"redis","port":6379,"password":""}
+[2025-11-13 09:23:00] [32minfo[39m: info
+[2025-11-13 09:23:00] [32minfo[39m: Redis client created, connecting...
+[2025-11-13 09:23:00] [32minfo[39m: Initializing pub/sub client...
+[2025-11-13 09:23:00] [32minfo[39m: Redis pu/sub client connected...
+[2025-11-13 09:23:00] [31merror[39m: ❌ Redis client connection failed:
+[2025-11-13 09:23:00] [31merror[39m: ❌ Redis pub/sub connection failed:
+SMTP Connection failed: connect ECONNREFUSED 127.0.0.1:587
+❌ Failed to send email to hr@yourcompany.com: connect ECONNREFUSED 127.0.0.1:587
+Error generating approved leave summary: Error: connect ECONNREFUSED 127.0.0.1:587
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -111,
+  code: 'ESOCKET',
+  syscall: 'connect',
+  address: '127.0.0.1',
+  port: 587,
+  command: 'CONN'
+}
+[dotenv@17.2.0] injecting env (0) from .env (tip: 🔐 encrypt with dotenvx: https://dotenvx.com)
+[2025-11-13 09:24:00] [32minfo[39m: Redis connection started
+[2025-11-13 09:24:00] [32minfo[39m: Initializing AppConfig...
+[2025-11-13 09:24:00] [32minfo[39m: Redis connection details: {"host":"redis","port":6379,"password":""}
+[2025-11-13 09:24:00] [32minfo[39m: info
+[2025-11-13 09:24:00] [32minfo[39m: Redis client created, connecting...
+[2025-11-13 09:24:00] [32minfo[39m: Initializing pub/sub client...
+[2025-11-13 09:24:00] [32minfo[39m: Redis pu/sub client connected...
+[2025-11-13 09:24:00] [31merror[39m: ❌ Redis client connection failed:
+[2025-11-13 09:24:00] [31merror[39m: ❌ Redis pub/sub connection failed:
+SMTP Connection failed: connect ECONNREFUSED 127.0.0.1:587
+❌ Failed to send email to hr@yourcompany.com: connect ECONNREFUSED 127.0.0.1:587
+Error generating approved leave summary: Error: connect ECONNREFUSED 127.0.0.1:587
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -111,
+  code: 'ESOCKET',
+  syscall: 'connect',
+  address: '127.0.0.1',
+  port: 587,
+  command: 'CONN'
+}
+[dotenv@17.2.0] injecting env (0) from .env (tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`)
+[2025-11-13 09:25:00] [32minfo[39m: Redis connection started
+[2025-11-13 09:25:00] [32minfo[39m: Initializing AppConfig...
+[2025-11-13 09:25:00] [32minfo[39m: Redis connection details: {"host":"redis","port":6379,"password":""}
+[2025-11-13 09:25:00] [32minfo[39m: info
+[2025-11-13 09:25:00] [32minfo[39m: Redis client created, connecting...
+[2025-11-13 09:25:00] [32minfo[39m: Initializing pub/sub client...
+[2025-11-13 09:25:00] [32minfo[39m: Redis pu/sub client connected...
+[2025-11-13 09:25:00] [31merror[39m: ❌ Redis client connection failed:
+[2025-11-13 09:25:00] [31merror[39m: ❌ Redis pub/sub connection failed:
+SMTP Connection failed: connect ECONNREFUSED 127.0.0.1:587
+❌ Failed to send email to hr@yourcompany.com: connect ECONNREFUSED 127.0.0.1:587
+Error generating approved leave summary: Error: connect ECONNREFUSED 127.0.0.1:587
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -111,
+  code: 'ESOCKET',
+  syscall: 'connect',
+  address: '127.0.0.1',
+  port: 587,
+  command: 'CONN'
+}
+[dotenv@17.2.0] injecting env (0) from .env (tip: ⚙️  override existing env vars with { override: true })
+[2025-11-13 09:26:00] [32minfo[39m: Redis connection started
+[2025-11-13 09:26:00] [32minfo[39m: Initializing AppConfig...
+[2025-11-13 09:26:00] [32minfo[39m: Redis connection details: {"host":"redis","port":6379,"password":""}
+[2025-11-13 09:26:00] [32minfo[39m: info
+[2025-11-13 09:26:00] [32minfo[39m: Redis client created, connecting...
+[2025-11-13 09:26:00] [32minfo[39m: Initializing pub/sub client...
+[2025-11-13 09:26:00] [32minfo[39m: Redis pu/sub client connected...
+[2025-11-13 09:26:00] [31merror[39m: ❌ Redis client connection failed:
+[2025-11-13 09:26:00] [31merror[39m: ❌ Redis pub/sub connection failed:
+SMTP Connection failed: connect ECONNREFUSED 127.0.0.1:587
+❌ Failed to send email to hr@yourcompany.com: connect ECONNREFUSED 127.0.0.1:587
+Error generating approved leave summary: Error: connect ECONNREFUSED 127.0.0.1:587
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -111,
+  code: 'ESOCKET',
+  syscall: 'connect',
+  address: '127.0.0.1',
+  port: 587,
+  command: 'CONN'
+}
+[dotenv@17.2.0] injecting env (0) from .env (tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`)
+[2025-11-13 09:27:00] [32minfo[39m: Redis connection started
+[2025-11-13 09:27:00] [32minfo[39m: Initializing AppConfig...
+[2025-11-13 09:27:00] [32minfo[39m: Redis connection details: {"host":"redis","port":6379,"password":""}
+[2025-11-13 09:27:00] [32minfo[39m: info
+[2025-11-13 09:27:00] [32minfo[39m: Redis client created, connecting...
+[2025-11-13 09:27:00] [32minfo[39m: Initializing pub/sub client...
+[2025-11-13 09:27:00] [32minfo[39m: Redis pu/sub client connected...
+[2025-11-13 09:27:00] [31merror[39m: ❌ Redis client connection failed:
+[2025-11-13 09:27:00] [31merror[39m: ❌ Redis pub/sub connection failed:
+SMTP Connection failed: connect ECONNREFUSED 127.0.0.1:587
+❌ Failed to send email to hr@yourcompany.com: connect ECONNREFUSED 127.0.0.1:587
+Error generating approved leave summary: Error: connect ECONNREFUSED 127.0.0.1:587
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -111,
+  code: 'ESOCKET',
+  syscall: 'connect',
+  address: '127.0.0.1',
+  port: 587,
+  command: 'CONN'
+}
+[dotenv@17.2.0] injecting env (0) from .env (tip: ⚙️  write to custom object with { processEnv: myObject })
+[2025-11-13 09:28:00] [32minfo[39m: Redis connection started
+[2025-11-13 09:28:00] [32minfo[39m: Initializing AppConfig...
+[2025-11-13 09:28:00] [32minfo[39m: Redis connection details: {"host":"redis","port":6379,"password":""}
+[2025-11-13 09:28:00] [32minfo[39m: info
+[2025-11-13 09:28:00] [32minfo[39m: Redis client created, connecting...
+[2025-11-13 09:28:00] [32minfo[39m: Initializing pub/sub client...
+[2025-11-13 09:28:00] [32minfo[39m: Redis pu/sub client connected...
+[2025-11-13 09:28:00] [31merror[39m: ❌ Redis client connection failed:
+[2025-11-13 09:28:00] [31merror[39m: ❌ Redis pub/sub connection failed:
+SMTP Connection failed: connect ECONNREFUSED 127.0.0.1:587
+❌ Failed to send email to hr@yourcompany.com: connect ECONNREFUSED 127.0.0.1:587
+Error generating approved leave summary: Error: connect ECONNREFUSED 127.0.0.1:587
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -111,
+  code: 'ESOCKET',
+  syscall: 'connect',
+  address: '127.0.0.1',
+  port: 587,
+  command: 'CONN'
+}
+[dotenv@17.2.0] injecting env (0) from .env (tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit)
+[2025-11-13 09:29:00] [32minfo[39m: Redis connection started
+[2025-11-13 09:29:00] [32minfo[39m: Initializing AppConfig...
+[2025-11-13 09:29:00] [32minfo[39m: Redis connection details: {"host":"redis","port":6379,"password":""}
+[2025-11-13 09:29:00] [32minfo[39m: info
+[2025-11-13 09:29:00] [32minfo[39m: Redis client created, connecting...
+[2025-11-13 09:29:00] [32minfo[39m: Initializing pub/sub client...
+[2025-11-13 09:29:00] [32minfo[39m: Redis pu/sub client connected...
+[2025-11-13 09:29:00] [31merror[39m: ❌ Redis client connection failed:
+[2025-11-13 09:29:00] [31merror[39m: ❌ Redis pub/sub connection failed:
+SMTP Connection failed: connect ECONNREFUSED 127.0.0.1:587
+❌ Failed to send email to hr@yourcompany.com: connect ECONNREFUSED 127.0.0.1:587
+Error generating approved leave summary: Error: connect ECONNREFUSED 127.0.0.1:587
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -111,
+  code: 'ESOCKET',
+  syscall: 'connect',
+  address: '127.0.0.1',
+  port: 587,
+  command: 'CONN'
+}
+[dotenv@17.2.0] injecting env (0) from .env (tip: 🔐 encrypt with dotenvx: https://dotenvx.com)
+[2025-11-13 09:30:00] [32minfo[39m: Redis connection started
+[2025-11-13 09:30:00] [32minfo[39m: Initializing AppConfig...
+[2025-11-13 09:30:00] [32minfo[39m: Redis connection details: {"host":"redis","port":6379,"password":""}
+[2025-11-13 09:30:00] [32minfo[39m: info
+[2025-11-13 09:30:00] [32minfo[39m: Redis client created, connecting...
+[2025-11-13 09:30:00] [32minfo[39m: Initializing pub/sub client...
+[2025-11-13 09:30:00] [32minfo[39m: Redis pu/sub client connected...
+[2025-11-13 09:30:00] [31merror[39m: ❌ Redis client connection failed:
+[2025-11-13 09:30:00] [31merror[39m: ❌ Redis pub/sub connection failed:
+SMTP Connection failed: connect ECONNREFUSED 127.0.0.1:587
+❌ Failed to send email to hr@yourcompany.com: connect ECONNREFUSED 127.0.0.1:587
+Error generating approved leave summary: Error: connect ECONNREFUSED 127.0.0.1:587
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -111,
+  code: 'ESOCKET',
+  syscall: 'connect',
+  address: '127.0.0.1',
+  port: 587,
+  command: 'CONN'
+}
+[dotenv@17.2.0] injecting env (0) from .env (tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`)
+[2025-11-13 09:31:00] [32minfo[39m: Redis connection started
+[2025-11-13 09:31:00] [32minfo[39m: Initializing AppConfig...
+[2025-11-13 09:31:00] [32minfo[39m: Redis connection details: {"host":"redis","port":6379,"password":""}
+[2025-11-13 09:31:00] [32minfo[39m: info
+[2025-11-13 09:31:00] [32minfo[39m: Redis client created, connecting...
+[2025-11-13 09:31:00] [32minfo[39m: Initializing pub/sub client...
+[2025-11-13 09:31:00] [32minfo[39m: Redis pu/sub client connected...
+[2025-11-13 09:31:00] [31merror[39m: ❌ Redis client connection failed:
+[2025-11-13 09:31:00] [31merror[39m: ❌ Redis pub/sub connection failed:
+SMTP Connection failed: connect ECONNREFUSED 127.0.0.1:587
+❌ Failed to send email to hr@yourcompany.com: connect ECONNREFUSED 127.0.0.1:587
+Error generating approved leave summary: Error: connect ECONNREFUSED 127.0.0.1:587
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -111,
+  code: 'ESOCKET',
+  syscall: 'connect',
+  address: '127.0.0.1',
+  port: 587,
+  command: 'CONN'
+}
+[dotenv@17.2.0] injecting env (0) from .env (tip: ⚙️  enable debug logging with { debug: true })
+[2025-11-13 09:32:00] [32minfo[39m: Redis connection started
+[2025-11-13 09:32:00] [32minfo[39m: Initializing AppConfig...
+[2025-11-13 09:32:00] [32minfo[39m: Redis connection details: {"host":"redis","port":6379,"password":""}
+[2025-11-13 09:32:00] [32minfo[39m: info
+[2025-11-13 09:32:00] [32minfo[39m: Redis client created, connecting...
+[2025-11-13 09:32:00] [32minfo[39m: Initializing pub/sub client...
+[2025-11-13 09:32:00] [32minfo[39m: Redis pu/sub client connected...
+[2025-11-13 09:32:00] [31merror[39m: ❌ Redis client connection failed:
+[2025-11-13 09:32:00] [31merror[39m: ❌ Redis pub/sub connection failed:
+SMTP Connection failed: connect ECONNREFUSED 127.0.0.1:587
+❌ Failed to send email to hr@yourcompany.com: connect ECONNREFUSED 127.0.0.1:587
+Error generating approved leave summary: Error: connect ECONNREFUSED 127.0.0.1:587
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -111,
+  code: 'ESOCKET',
+  syscall: 'connect',
+  address: '127.0.0.1',
+  port: 587,
+  command: 'CONN'
+}
+[dotenv@17.2.0] injecting env (0) from .env (tip: ⚙️  suppress all logs with { quiet: true })
+[2025-11-13 09:33:00] [32minfo[39m: Redis connection started
+[2025-11-13 09:33:00] [32minfo[39m: Initializing AppConfig...
+[2025-11-13 09:33:00] [32minfo[39m: Redis connection details: {"host":"redis","port":6379,"password":""}
+[2025-11-13 09:33:00] [32minfo[39m: info
+[2025-11-13 09:33:00] [32minfo[39m: Redis client created, connecting...
+[2025-11-13 09:33:00] [32minfo[39m: Initializing pub/sub client...
+[2025-11-13 09:33:00] [32minfo[39m: Redis pu/sub client connected...
+[2025-11-13 09:33:00] [31merror[39m: ❌ Redis client connection failed:
+[2025-11-13 09:33:00] [31merror[39m: ❌ Redis pub/sub connection failed:
+SMTP Connection failed: connect ECONNREFUSED 127.0.0.1:587
+❌ Failed to send email to hr@yourcompany.com: connect ECONNREFUSED 127.0.0.1:587
+Error generating approved leave summary: Error: connect ECONNREFUSED 127.0.0.1:587
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -111,
+  code: 'ESOCKET',
+  syscall: 'connect',
+  address: '127.0.0.1',
+  port: 587,
+  command: 'CONN'
+}
+[dotenv@17.2.0] injecting env (0) from .env (tip: ⚙️  enable debug logging with { debug: true })
+[2025-11-13 09:34:00] [32minfo[39m: Redis connection started
+[2025-11-13 09:34:00] [32minfo[39m: Initializing AppConfig...
+[2025-11-13 09:34:00] [32minfo[39m: Redis connection details: {"host":"redis","port":6379,"password":""}
+[2025-11-13 09:34:00] [32minfo[39m: info
+[2025-11-13 09:34:00] [32minfo[39m: Redis client created, connecting...
+[2025-11-13 09:34:00] [32minfo[39m: Initializing pub/sub client...
+[2025-11-13 09:34:00] [32minfo[39m: Redis pu/sub client connected...
+[2025-11-13 09:34:00] [31merror[39m: ❌ Redis client connection failed:
+[2025-11-13 09:34:00] [31merror[39m: ❌ Redis pub/sub connection failed:
+SMTP Connection failed: connect ECONNREFUSED 127.0.0.1:587
+❌ Failed to send email to hr@yourcompany.com: connect ECONNREFUSED 127.0.0.1:587
+Error generating approved leave summary: Error: connect ECONNREFUSED 127.0.0.1:587
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -111,
+  code: 'ESOCKET',
+  syscall: 'connect',
+  address: '127.0.0.1',
+  port: 587,
+  command: 'CONN'
+}
+[dotenv@17.2.0] injecting env (0) from .env (tip: ⚙️  suppress all logs with { quiet: true })
+[2025-11-13 09:35:00] [32minfo[39m: Redis connection started
+[2025-11-13 09:35:00] [32minfo[39m: Initializing AppConfig...
+[2025-11-13 09:35:00] [32minfo[39m: Redis connection details: {"host":"redis","port":6379,"password":""}
+[2025-11-13 09:35:00] [32minfo[39m: info
+[2025-11-13 09:35:00] [32minfo[39m: Redis client created, connecting...
+[2025-11-13 09:35:00] [32minfo[39m: Initializing pub/sub client...
+[2025-11-13 09:35:00] [32minfo[39m: Redis pu/sub client connected...
+[2025-11-13 09:35:00] [31merror[39m: ❌ Redis client connection failed:
+[2025-11-13 09:35:00] [31merror[39m: ❌ Redis pub/sub connection failed:
+SMTP Connection failed: connect ECONNREFUSED 127.0.0.1:587
+❌ Failed to send email to hr@yourcompany.com: connect ECONNREFUSED 127.0.0.1:587
+Error generating approved leave summary: Error: connect ECONNREFUSED 127.0.0.1:587
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -111,
+  code: 'ESOCKET',
+  syscall: 'connect',
+  address: '127.0.0.1',
+  port: 587,
+  command: 'CONN'
+}
+[dotenv@17.2.0] injecting env (0) from .env (tip: ⚙️  write to custom object with { processEnv: myObject })
+[2025-11-13 09:36:00] [32minfo[39m: Redis connection started
+[2025-11-13 09:36:00] [32minfo[39m: Initializing AppConfig...
+[2025-11-13 09:36:00] [32minfo[39m: Redis connection details: {"host":"redis","port":6379,"password":""}
+[2025-11-13 09:36:00] [32minfo[39m: info
+[2025-11-13 09:36:00] [32minfo[39m: Redis client created, connecting...
+[2025-11-13 09:36:00] [32minfo[39m: Initializing pub/sub client...
+[2025-11-13 09:36:00] [32minfo[39m: Redis pu/sub client connected...
+[2025-11-13 09:36:00] [31merror[39m: ❌ Redis client connection failed:
+[2025-11-13 09:36:00] [31merror[39m: ❌ Redis pub/sub connection failed:
+SMTP Connection failed: connect ECONNREFUSED 127.0.0.1:587
+❌ Failed to send email to hr@yourcompany.com: connect ECONNREFUSED 127.0.0.1:587
+Error generating approved leave summary: Error: connect ECONNREFUSED 127.0.0.1:587
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -111,
+  code: 'ESOCKET',
+  syscall: 'connect',
+  address: '127.0.0.1',
+  port: 587,
+  command: 'CONN'
+}
+[dotenv@17.2.0] injecting env (0) from .env (tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' })
+[2025-11-13 09:37:00] [32minfo[39m: Redis connection started
+[2025-11-13 09:37:00] [32minfo[39m: Initializing AppConfig...
+[2025-11-13 09:37:00] [32minfo[39m: Redis connection details: {"host":"redis","port":6379,"password":""}
+[2025-11-13 09:37:00] [32minfo[39m: info
+[2025-11-13 09:37:00] [32minfo[39m: Redis client created, connecting...
+[2025-11-13 09:37:00] [32minfo[39m: Initializing pub/sub client...
+[2025-11-13 09:37:00] [32minfo[39m: Redis pu/sub client connected...
+[2025-11-13 09:37:00] [31merror[39m: ❌ Redis client connection failed:
+[2025-11-13 09:37:00] [31merror[39m: ❌ Redis pub/sub connection failed:
+SMTP Connection failed: connect ECONNREFUSED 127.0.0.1:587
+❌ Failed to send email to hr@yourcompany.com: connect ECONNREFUSED 127.0.0.1:587
+Error generating approved leave summary: Error: connect ECONNREFUSED 127.0.0.1:587
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -111,
+  code: 'ESOCKET',
+  syscall: 'connect',
+  address: '127.0.0.1',
+  port: 587,
+  command: 'CONN'
+}
+[dotenv@17.2.0] injecting env (0) from .env (tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit)
+[2025-11-13 09:38:00] [32minfo[39m: Redis connection started
+[2025-11-13 09:38:00] [32minfo[39m: Initializing AppConfig...
+[2025-11-13 09:38:00] [32minfo[39m: Redis connection details: {"host":"redis","port":6379,"password":""}
+[2025-11-13 09:38:00] [32minfo[39m: info
+[2025-11-13 09:38:00] [32minfo[39m: Redis client created, connecting...
+[2025-11-13 09:38:00] [32minfo[39m: Initializing pub/sub client...
+[2025-11-13 09:38:00] [32minfo[39m: Redis pu/sub client connected...
+[2025-11-13 09:38:00] [31merror[39m: ❌ Redis client connection failed:
+[2025-11-13 09:38:00] [31merror[39m: ❌ Redis pub/sub connection failed:
+SMTP Connection failed: connect ECONNREFUSED 127.0.0.1:587
+❌ Failed to send email to hr@yourcompany.com: connect ECONNREFUSED 127.0.0.1:587
+Error generating approved leave summary: Error: connect ECONNREFUSED 127.0.0.1:587
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -111,
+  code: 'ESOCKET',
+  syscall: 'connect',
+  address: '127.0.0.1',
+  port: 587,
+  command: 'CONN'
+}
