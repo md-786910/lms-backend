@@ -172,10 +172,23 @@ const employeLeaveApprove = catchAsync(async (req, res, next) => {
   if (!checkLeaveAvailable) {
     return next(new AppError("Leave type not found", STATUS_CODE.NOT_FOUND));
   }
+
+  if (
+    Number(checkLeaveAvailable.leave_remaing) - Number(leave.total_days || 0) <
+      0 ||
+    Number(checkLeaveAvailable.leave_remaing) < 0
+  ) {
+    return next(
+      new AppError(
+        "Your leave has ended. Kindly reach out to your administrator for further help."
+      )
+    );
+  }
+
   checkLeaveAvailable.leave_remaing =
-    checkLeaveAvailable.leave_count - parseFloat(leave.total_days || 0);
+    Number(checkLeaveAvailable.leave_remaing) - Number(leave.total_days || 0);
   checkLeaveAvailable.leave_used =
-    checkLeaveAvailable.leave_used + parseFloat(leave.total_days || 0);
+    Number(checkLeaveAvailable.leave_used) + Number(leave.total_days || 0);
   await checkLeaveAvailable.save();
 
   leave.status = "approved";
