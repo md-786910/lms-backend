@@ -117,12 +117,21 @@ const employeLeaveReject = catchAsync(async (req, res, next) => {
   leave.rejected_reason = rejected_reason;
   await leave.save();
 
+  const employee = await employeeRepos.findOne({
+    attributes: ["first_name"],
+    where: {
+      company_id,
+      id: employee_id,
+    },
+  });
+  const { first_name = "unkown" } = employee;
+
   // history
   await activityRepos.addActivity({
     company_id,
     employee_id,
-    title: `Leave request rejected`,
-    message: "Leave request rejected successfully",
+    title: `${first_name} your leave request has been rejected`,
+    message: `${first_name} Leave request rejected has been successfully`,
     role: "employee",
   });
 
@@ -172,11 +181,22 @@ const employeLeaveApprove = catchAsync(async (req, res, next) => {
   leave.status = "approved";
   await leave.save();
 
+  // get employee first name
+  const employee = await employeeRepos.findOne({
+    attributes: ["first_name"],
+    where: {
+      company_id,
+      id: employee_id,
+    },
+  });
+  console.log({ employee });
+  const { first_name = "unkown" } = employee;
+
   await activityRepos.addActivity({
     company_id,
     employee_id,
-    title: `Leave request approved`,
-    message: "Leave request approved successfully",
+    title: `${first_name} your leave request has been approved`,
+    message: `${first_name} your leave request has been approved`,
     role: "employee",
   });
   //   notify to employ with [email,notification]
