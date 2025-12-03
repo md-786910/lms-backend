@@ -39,6 +39,12 @@ module.exports = (sequelize, DataTypes) => {
         sourceKey: "id",
         as: "employee_salary",
       });
+
+      this.hasMany(models[TABLE_MODEL_MAPPING[TABLE_NAME.LEAVE_REQUEST]], {
+        foreignKey: "employee_id",
+        sourceKey: "id",
+        as: "leaveRequests",
+      });
     }
   }
   Employee.init(

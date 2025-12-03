@@ -90,55 +90,125 @@ const getDashboard = catchAsync(async (req, res, next) => {
 
   // Total leave employee - prev month and next month
   const range1 = getMonthRange("previous");
-  const previous_month_leaves = await leaveRequestRepos.findAll({
-    where: {
-      status: "approved",
-      start_date: {
-        [Op.gte]: range1?.startDate,
-        [Op.lt]: range1?.endDate,
-      },
-    },
+  const previous_month_leaves = await employeeRepos.findAll({
     attributes: [
-      "employee_id",
-      [sequelize.fn("SUM", sequelize.col("total_days")), "total_leave"],
+      "id",
+      "first_name",
+      "last_name",
+      "email",
+      [
+        sequelize.fn(
+          "COALESCE",
+          sequelize.fn("SUM", sequelize.col("leaveRequests.total_days")),
+          0
+        ),
+        "total_leave",
+      ],
     ],
     include: [
       {
-        model: employeeRepos,
-        as: "employee",
-        attributes: ["first_name", "last_name", "email"],
+        model: leaveRequestRepos,
+        as: "leaveRequests",
+        required: false, // IMPORTANT: LEFT JOIN
+        attributes: [],
+        where: {
+          status: "approved",
+          start_date: {
+            [Op.gte]: range1?.startDate,
+            [Op.lt]: range1?.endDate,
+          },
+        },
       },
     ],
-    group: ["employee_id", "employee.id"],
+    group: ["Employee.id"],
     order: [[sequelize.literal("total_leave"), "DESC"]],
     raw: false,
   });
 
+  // const previous_month_leaves = await leaveRequestRepos.findAll({
+  //   where: {
+  //     status: "approved",
+  //     start_date: {
+  //       [Op.gte]: range1?.startDate,
+  //       [Op.lt]: range1?.endDate,
+  //     },
+  //   },
+  //   attributes: [
+  //     "employee_id",
+  //     [sequelize.fn("SUM", sequelize.col("total_days")), "total_leave"],
+  //   ],
+  //   include: [
+  //     {
+  //       model: employeeRepos,
+  //       as: "employee",
+  //       attributes: ["first_name", "last_name", "email"],
+  //     },
+  //   ],
+  //   group: ["employee_id", "employee.id"],
+  //   order: [[sequelize.literal("total_leave"), "DESC"]],
+  //   raw: false,
+  // });
+
   // current month
+
   const range2 = getMonthRange("current");
-  const current_month_leaves = await leaveRequestRepos.findAll({
-    where: {
-      status: "approved",
-      start_date: {
-        [Op.gte]: range2?.startDate,
-        [Op.lt]: range2?.endDate,
-      },
-    },
+  const current_month_leaves = await employeeRepos.findAll({
     attributes: [
-      "employee_id",
-      [sequelize.fn("SUM", sequelize.col("total_days")), "total_leave"],
+      "id",
+      "first_name",
+      "last_name",
+      "email",
+      [
+        sequelize.fn(
+          "COALESCE",
+          sequelize.fn("SUM", sequelize.col("leaveRequests.total_days")),
+          0
+        ),
+        "total_leave",
+      ],
     ],
     include: [
       {
-        model: employeeRepos,
-        as: "employee",
-        attributes: ["first_name", "last_name", "email"],
+        model: leaveRequestRepos,
+        as: "leaveRequests",
+        required: false, // IMPORTANT: LEFT JOIN
+        attributes: [],
+        where: {
+          status: "approved",
+          start_date: {
+            [Op.gte]: range2?.startDate,
+            [Op.lt]: range2?.endDate,
+          },
+        },
       },
     ],
-    group: ["employee_id", "employee.id"],
+    group: ["Employee.id"],
     order: [[sequelize.literal("total_leave"), "DESC"]],
     raw: false,
   });
+  // const current_month_leaves = await leaveRequestRepos.findAll({
+  //   where: {
+  //     status: "approved",
+  //     start_date: {
+  //       [Op.gte]: range2?.startDate,
+  //       [Op.lt]: range2?.endDate,
+  //     },
+  //   },
+  //   attributes: [
+  //     "employee_id",
+  //     [sequelize.fn("SUM", sequelize.col("total_days")), "total_leave"],
+  //   ],
+  //   include: [
+  //     {
+  //       model: employeeRepos,
+  //       as: "employee",
+  //       attributes: ["first_name", "last_name", "email"],
+  //     },
+  //   ],
+  //   group: ["employee_id", "employee.id"],
+  //   order: [[sequelize.literal("total_leave"), "DESC"]],
+  //   raw: false,
+  // });
 
   res.status(STATUS_CODE.OK).json({
     status: true,
