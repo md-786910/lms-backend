@@ -91,6 +91,9 @@ const getDashboard = catchAsync(async (req, res, next) => {
   // Total leave employee - prev month and next month
   const range1 = getMonthRange("previous");
   const previous_month_leaves = await employeeRepos.findAll({
+    where: {
+      company_id,
+    },
     attributes: [
       "id",
       "first_name",
@@ -153,6 +156,9 @@ const getDashboard = catchAsync(async (req, res, next) => {
 
   const range2 = getMonthRange("current");
   const current_month_leaves = await employeeRepos.findAll({
+    where: {
+      company_id,
+    },
     attributes: [
       "id",
       "first_name",
