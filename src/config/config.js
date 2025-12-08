@@ -3,7 +3,7 @@ module.exports = {
   development: {
     username: "postgres",
     password: "postgres",
-    database: "lms",
+    database: "lms1",
     host: "db",
     dialect: "postgres",
     define: {
