@@ -277,9 +277,188 @@ const getLeaveDashboard = catchAsync(async (req, res, next) => {
   });
 });
 
+// Admin create leave for employee
+const adminCreateLeaveRequest = catchAsync(async (req, res, next) => {
+  const { company_id } = req.user;
+  const {
+    employee_id,
+    leave_type_id,
+    start_date,
+    end_date,
+    total_days,
+    leave_on = [],
+    reason,
+    emergency_contact_person,
+    status = "approved", // Admin can set status directly (approved or pending)
+  } = req.body;
+
+  // Validate employee exists in the company
+  const employee = await employeeRepos.findOne({
+    where: { id: employee_id, company_id },
+    attributes: ["id", "first_name"],
+  });
+
+  if (!employee) {
+    return next(
+      new AppError("Employee not found in this company", STATUS_CODE.NOT_FOUND)
+    );
+  }
+
+  // Step 1: Parse dates
+  const start = new Date(start_date);
+  const end = new Date(end_date);
+
+  // Step 2: Check valid date range
+  if (start > end) {
+    return next(
+      new AppError(
+        "Start date cannot be after end date",
+        STATUS_CODE.BAD_REQUEST
+      )
+    );
+  }
+
+  // Step 3: Check if leave already applied on same dates
+  const leaveAppliedAlready = await leaveRequestRepos.findOne({
+    where: {
+      company_id,
+      employee_id,
+      leave_type_id,
+      [Op.or]: [
+        { start_date: { [Op.between]: [start, end] } },
+        { end_date: { [Op.between]: [start, end] } },
+      ],
+    },
+  });
+
+  if (leaveAppliedAlready) {
+    return next(
+      new AppError(
+        "This employee already has a leave request on this date",
+        STATUS_CODE.BAD_REQUEST
+      )
+    );
+  }
+
+  // Step 4: Validate leave type exists
+  const leaveType = await employeLeaveRepos.findOne({
+    attributes: ["id", "leave_count", "leave_type", "leave_remaing"],
+    where: {
+      company_id,
+      employee_id,
+      id: leave_type_id,
+    },
+  });
+
+  if (!leaveType) {
+    return next(
+      new AppError(
+        "Leave type not found for this employee",
+        STATUS_CODE.NOT_FOUND
+      )
+    );
+  }
+
+  // Step 5: Validate total days
+  const msPerDay = 1000 * 60 * 60 * 24;
+  const calculatedDays = Math.floor((end - start) / msPerDay) + 1;
+
+  if (total_days > calculatedDays) {
+    return next(
+      new AppError(
+        `Total days (${total_days}) exceeds the date range (${calculatedDays} days)`,
+        STATUS_CODE.BAD_REQUEST
+      )
+    );
+  }
+
+  // Step 6: Check leave balance if status is approved
+  if (status === "approved") {
+    const { leave_remaing } = leaveType;
+    if (total_days > leave_remaing) {
+      return next(
+        new AppError(
+          `Insufficient leave balance. Available: ${leave_remaing} days, Requested: ${total_days} days`,
+          STATUS_CODE.BAD_REQUEST
+        )
+      );
+    }
+  }
+
+  // Step 7: Create leave request in transaction
+  const transaction = await Sequelize.sequelize.transaction();
+  try {
+    const leaveRequest = await leaveRequestRepos.create(
+      {
+        employee_id,
+        company_id,
+        leave_type_id,
+        start_date,
+        end_date,
+        total_days,
+        leave_on,
+        reason,
+        emergency_contact_person,
+        status,
+      },
+      { transaction }
+    );
+
+    // Step 8: If status is approved, update leave balance
+    if (status === "approved") {
+      leaveType.leave_remaing -= total_days;
+      leaveType.leave_used = (leaveType.leave_used || 0) + total_days;
+      await leaveType.save({ transaction });
+
+      // Add activity log
+      await activityRepos.addActivity({
+        company_id,
+        employee_id,
+        title: `Admin created approved leave for ${employee.first_name}`,
+        message: `${employee.first_name}'s leave has been approved by admin`,
+        role: "employee",
+      });
+
+      // Emit approval event
+      eventEmitter.emit(eventObj.APPROVED_LEAVE, {
+        employee_id,
+        company_id,
+        leave_request_id: leaveRequest.id,
+        leave_type: leaveType.leave_type,
+      });
+    } else {
+      // Add activity log for pending
+      await activityRepos.addActivity({
+        company_id,
+        employee_id,
+        title: `Admin created leave request for ${employee.first_name}`,
+        message: `Admin has created a leave request for ${employee.first_name}`,
+        role: "employee",
+      });
+    }
+
+    await transaction.commit();
+
+    res.status(201).json({
+      status: true,
+      message: `Leave request created successfully with status: ${status}`,
+      data: leaveRequest,
+    });
+  } catch (error) {
+    await transaction.rollback();
+    return next(
+      new AppError(
+        error.message || "Error creating leave request",
+        STATUS_CODE.INTERNAL_SERVER_ERROR
+      )
+    );
+  }
+});
+
 module.exports = {
   getAllEmployeLeavs,
   employeLeaveReject,
   employeLeaveApprove,
   getLeaveDashboard,
+  adminCreateLeaveRequest,
 };
