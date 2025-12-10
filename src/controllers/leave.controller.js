@@ -347,7 +347,7 @@ const adminCreateLeaveRequest = catchAsync(async (req, res, next) => {
     where: {
       company_id,
       employee_id,
-      id: leave_type_id,
+      leave_id: leave_type_id,
     },
   });
 
