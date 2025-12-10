@@ -576,7 +576,7 @@ const STATIC_LEAVE_DATA_2025 = [
     october: 2,
     november: 2.5,
     december: 0,
-    total: 21.5,
+    total: 20.5,
   },
   {
     name: "Amit Singh",
