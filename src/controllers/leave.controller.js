@@ -32,6 +32,8 @@ const getAllEmployeLeavs = catchAsync(async (req, res, next) => {
     where.status = status;
   }
 
+  console.log({ leave_type_id });
+
   if (search) {
     where[Op.or] = [
       {
@@ -46,7 +48,7 @@ const getAllEmployeLeavs = catchAsync(async (req, res, next) => {
       },
     ];
   }
-
+  console.log({ where });
   const leaves = await leaveRequestRepos.findAll({
     where,
     include: [
@@ -60,11 +62,6 @@ const getAllEmployeLeavs = catchAsync(async (req, res, next) => {
         ],
         model: employeeRepos,
         as: "employee",
-      },
-      {
-        attributes: ["id", "leave_type"],
-        model: employeLeaveRepos,
-        as: "leave_type",
       },
     ],
     order: [
@@ -90,6 +87,17 @@ const getAllEmployeLeavs = catchAsync(async (req, res, next) => {
         id: leaves[key].employee.department_id,
       },
     });
+
+    const empLeave = await employeLeaveRepos.findOne({
+      attributes: ["id", "leave_type"],
+      where: {
+        company_id,
+        employee_id: leaves[key].employee_id,
+        leave_id: leaves[key].leave_type_id,
+      },
+    });
+    leaves[key].dataValues.leave_type = empLeave;
+
     const pref = prefix?.name ?? "EMP";
     leaves[key].employee.employee_no = `${pref}-${leaves[key].employee?.id}`;
   }
