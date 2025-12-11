@@ -175,7 +175,7 @@ const employeLeaveApprove = catchAsync(async (req, res, next) => {
     where: {
       company_id,
       employee_id,
-      id: leave?.leave_type_id,
+      leave_id: leave?.leave_type_id,
     },
   });
   if (!checkLeaveAvailable) {
@@ -252,54 +252,23 @@ const getLeaveDashboard = catchAsync(async (req, res, next) => {
   // 2. Fetch approved requests
   const approvedRequests = await leaveRequestRepos.findAll({
     where: { company_id, status: "approved" },
-    attributes: ["total_days", "start_date", "end_date", "leave_on"],
+    attributes: ["total_days", "start_date", "end_date"],
   });
   const approvedCount = approvedRequests.length;
   // 3. Calculate total leave days from approved
   const totalLeaveDays = approvedRequests.reduce(
-    (sum, r) => sum + (Number(r.total_days) || 0),
+    (sum, r) => sum + (parseInt(r.total_days) || 0),
     0
   );
 
   // 4. Calculate leave days for this month only
-  // const thisMonthLeaveDays = approvedRequests.reduce((sum, r) => {
-  //   const start = new Date(r.start_date);
-  //   const end = new Date(r.end_date);
-
-  //   // If the leave overlaps with the current month
-  //   if (start <= endOfMonth && end >= startOfMonth) {
-  //     sum += Number(r.total_days) || 0;
-  //   }
-
-  //   return sum;
-  // }, 0);
-
   const thisMonthLeaveDays = approvedRequests.reduce((sum, r) => {
-    const leaveOn = JSON.parse(r.leave_on || "[]");
+    const start = new Date(r.start_date);
+    const end = new Date(r.end_date);
 
-    // Use leave_on array for accurate calculation (includes half days)
-    if (leaveOn.length > 0) {
-      for (const day of leaveOn) {
-        const dayDate = new Date(day.date);
-        // Check if day falls within current month
-        if (dayDate >= startOfMonth && dayDate <= endOfMonth) {
-          sum += day?.count || 0;
-        }
-      }
-    } else {
-      // Fallback: use date range calculation
-      const leaveStart = new Date(r.start_date);
-      const leaveEnd = new Date(r.end_date);
-
-      const effectiveStart =
-        leaveStart < startOfMonth ? startOfMonth : leaveStart;
-      const effectiveEnd = leaveEnd > endOfMonth ? endOfMonth : leaveEnd;
-
-      if (effectiveStart <= effectiveEnd) {
-        const diffTime = effectiveEnd - effectiveStart;
-        const days = diffTime / (1000 * 60 * 60 * 24) + 1;
-        sum += days;
-      }
+    // If the leave overlaps with the current month
+    if (start <= endOfMonth && end >= startOfMonth) {
+      sum += parseInt(r.total_days) || 0;
     }
 
     return sum;
@@ -643,19 +612,19 @@ const STATIC_LEAVE_DATA_2025 = [
   },
   {
     name: "Sunil kumar singh",
-    january: 1,
-    february: 1,
-    march: 1,
-    april: 0.5,
-    may: 1.5,
-    june: 2,
+    january: 0,
+    february: 0,
+    march: 0,
+    april: 0,
+    may: 0,
+    june: 0,
     july: 0,
-    august: 2,
-    september: 1.5,
-    october: 0.5,
-    november: 2,
+    august: 0,
+    september: 0,
+    october: 0,
+    november: 0,
     december: 0,
-    total: 13,
+    total: 0,
   },
 ];
 

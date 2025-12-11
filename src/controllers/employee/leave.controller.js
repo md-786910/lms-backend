@@ -61,11 +61,11 @@ const getAllLeaveRequest = catchAsync(async (req, res, next) => {
   const leaves = await leaveRequestRepos.findAll({
     where: { employee_id: id, company_id },
     include: [
-      // {
-      //   attributes: ["id", "leave_type"],
-      //   model: employeLeaveRepos,
-      //   as: "leave_type",
-      // },
+      {
+        attributes: ["id", "leave_type"],
+        model: employeLeaveRepos,
+        as: "leave_type",
+      },
     ],
     order: [
       [
@@ -82,19 +82,6 @@ const getAllLeaveRequest = catchAsync(async (req, res, next) => {
       ["createdAt", "DESC"],
     ],
   });
-
-  for (const key in leaves) {
-    const empLeave = await employeLeaveRepos.findOne({
-      attributes: ["id", "leave_type"],
-      where: {
-        company_id,
-        employee_id: leaves[key].employee_id,
-        leave_id: leaves[key].leave_type_id,
-      },
-    });
-    leaves[key].dataValues.leave_type = empLeave;
-  }
-
   res.status(200).json({
     status: true,
     message: "Leaves fetched successfully",
@@ -135,6 +122,7 @@ const createLeaveRequest = catchAsync(async (req, res, next) => {
       company_id,
       employee_id,
       leave_type_id,
+      status: "approved",
       [db.Sequelize.Op.or]: [
         { start_date: { [db.Sequelize.Op.between]: [start, end] } },
         { end_date: { [db.Sequelize.Op.between]: [start, end] } },
@@ -170,7 +158,7 @@ const createLeaveRequest = catchAsync(async (req, res, next) => {
     where: {
       company_id,
       employee_id,
-      id: leave_type_id,
+      leave_id: leave_type_id,
     },
   });
   if (!leave) {
