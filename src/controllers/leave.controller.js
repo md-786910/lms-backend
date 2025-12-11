@@ -262,13 +262,32 @@ const getLeaveDashboard = catchAsync(async (req, res, next) => {
   );
 
   // 4. Calculate leave days for this month only
-  const thisMonthLeaveDays = approvedRequests.reduce((sum, r) => {
-    const start = new Date(r.start_date);
-    const end = new Date(r.end_date);
+  // const thisMonthLeaveDays = approvedRequests.reduce((sum, r) => {
+  //   const start = new Date(r.start_date);
+  //   const end = new Date(r.end_date);
 
-    // If the leave overlaps with the current month
-    if (start <= endOfMonth && end >= startOfMonth) {
-      sum += Number(r.total_days) || 0;
+  //   // If the leave overlaps with the current month
+  //   if (start <= endOfMonth && end >= startOfMonth) {
+  //     sum += Number(r.total_days) || 0;
+  //   }
+
+  //   return sum;
+  // }, 0);
+
+  const thisMonthLeaveDays = approvedRequests.reduce((sum, r) => {
+    const leaveStart = new Date(r.start_date);
+    const leaveEnd = new Date(r.end_date);
+
+    // Clamp the leave period to this month
+    const effectiveStart =
+      leaveStart < startOfMonth ? startOfMonth : leaveStart;
+    const effectiveEnd = leaveEnd > endOfMonth ? endOfMonth : leaveEnd;
+
+    // If overlap exists
+    if (effectiveStart <= effectiveEnd) {
+      const diffTime = effectiveEnd - effectiveStart;
+      const days = diffTime / (1000 * 60 * 60 * 24) + 1; // inclusive days
+      sum += days;
     }
 
     return sum;
