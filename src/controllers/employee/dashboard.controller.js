@@ -40,7 +40,15 @@ const dashboard = catchAsync(async (req, res, next) => {
   const startOfToday = dayjs().tz("Asia/Kolkata").startOf("day").toDate();
   const endOfToday = dayjs().tz("Asia/Kolkata").endOf("day").toDate();
   let employeesOnLeaveToday = await leaveRequestRepos.findAll({
-    attributes: ["status", "start_date", "end_date", "total_days", "leave_on"],
+    attributes: [
+      "status",
+      "start_date",
+      "end_date",
+      "total_days",
+      "leave_on",
+      "leave_type_id",
+      "employee_id",
+    ],
     where: {
       company_id,
       status: "approved",
@@ -61,15 +69,27 @@ const dashboard = catchAsync(async (req, res, next) => {
         ],
         as: "employee",
       },
-      {
-        model: employeLeaveRepos,
-        attributes: ["id", "leave_type"],
-        as: "leave_type",
-      },
+      // {
+      //   model: employeLeaveRepos,
+      //   attributes: ["id", "leave_type"],
+      //   as: "leave_type",
+      // },
     ],
     distinct: true,
     col: "employee_id",
   });
+
+  for (const key in employeesOnLeaveToday) {
+    const empLeave = await employeLeaveRepos.findOne({
+      attributes: ["id", "leave_type"],
+      where: {
+        company_id,
+        employee_id: employeesOnLeaveToday[key].employee_id,
+        leave_id: employeesOnLeaveToday[key].leave_type_id,
+      },
+    });
+    employeesOnLeaveToday[key].dataValues.leave_type = empLeave;
+  }
 
   const activities = await activityRepos.findAll({
     where: {
