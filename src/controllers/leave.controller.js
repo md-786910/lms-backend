@@ -257,7 +257,7 @@ const getLeaveDashboard = catchAsync(async (req, res, next) => {
   const approvedCount = approvedRequests.length;
   // 3. Calculate total leave days from approved
   const totalLeaveDays = approvedRequests.reduce(
-    (sum, r) => sum + (parseInt(r.total_days) || 0),
+    (sum, r) => sum + (Number(r.total_days) || 0),
     0
   );
 
@@ -268,7 +268,7 @@ const getLeaveDashboard = catchAsync(async (req, res, next) => {
 
     // If the leave overlaps with the current month
     if (start <= endOfMonth && end >= startOfMonth) {
-      sum += parseInt(r.total_days) || 0;
+      sum += Number(r.total_days) || 0;
     }
 
     return sum;
