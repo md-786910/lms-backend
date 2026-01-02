@@ -60,7 +60,9 @@ function buildHtmlReport(results, { monthName, prevYear }) {
     `;
   }
 
-  const totalEmployees = results.length;
+  const totalEmployees = results.filter(
+    (row) => parseFloat(row.get("total_leave") || 0) > 0
+  ).length;
   const totalLeaveDays = results.reduce((sum, row) => {
     return sum + parseFloat(row.get("total_leave") || 0);
   }, 0);
@@ -69,10 +71,8 @@ function buildHtmlReport(results, { monthName, prevYear }) {
   let isAlt = false;
 
   results.forEach((row) => {
-    const employee = row.employee;
-    const fullName = employee
-      ? `${employee.first_name || ""} ${employee.last_name || ""}`.trim()
-      : `#${row.employee_id}`;
+    const fullName =
+      `${row.first_name || ""} ${row.last_name || ""}`.trim() || `#${row.id}`;
     const totalLeave = parseFloat(row.get("total_leave") || 0).toFixed(1);
     const rowBg = isAlt ? "#f9fafb" : "#ffffff";
     isAlt = !isAlt;
@@ -164,26 +164,45 @@ async function generateApprovedLeaveSummary() {
     const range = getPreviousMonthRange();
     const { startDate, endDate, monthName, prevYear } = range;
 
-    const results = await leaveRequestRepos.findAll({
+    // Get all active employees with their leave totals (including those with 0 leaves)
+    const results = await employeeRepos.findAll({
       where: {
-        status: "approved",
-        start_date: {
-          [Op.gte]: startDate,
-          [Op.lt]: endDate,
-        },
+        is_active: true,
+        company_id: 2,
       },
       attributes: [
-        "employee_id",
-        [db.sequelize.fn("SUM", db.sequelize.col("total_days")), "total_leave"],
+        "id",
+        "first_name",
+        "last_name",
+        "email",
+        [
+          db.sequelize.fn(
+            "COALESCE",
+            db.sequelize.fn(
+              "SUM",
+              db.sequelize.col("leaveRequests.total_days")
+            ),
+            0
+          ),
+          "total_leave",
+        ],
       ],
       include: [
         {
-          model: employeeRepos,
-          as: "employee",
-          attributes: ["first_name", "last_name", "email"],
+          model: leaveRequestRepos,
+          as: "leaveRequests",
+          attributes: [],
+          required: false,
+          where: {
+            status: "approved",
+            start_date: {
+              [Op.gte]: startDate,
+              [Op.lt]: endDate,
+            },
+          },
         },
       ],
-      group: ["employee_id", "employee.id"],
+      group: ["Employee.id"],
       order: [[db.sequelize.literal("total_leave"), "DESC"]],
       raw: false,
     });
