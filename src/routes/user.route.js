@@ -7,6 +7,7 @@ const {
   createNewPassword,
   verifyEmployee,
   createNewUser,
+  changePassword,
 } = require("../schema/user");
 const {
   loginUser,
@@ -16,6 +17,7 @@ const {
   addNewUser,
   getAllUser,
   deleteNewUser,
+  changePassword: changePasswordController,
 } = require("../controllers/user.controller");
 const { ROLE } = require("../constants/user");
 const { userSessionRepos } = require("../repository/base");
@@ -46,6 +48,13 @@ router.post("/add-new-user", joiValidation(createNewUser), addNewUser);
 router.get("/new-user", getAllUser);
 
 router.delete("/new-user/:id", deleteNewUser);
+
+// change password for logged in admin
+router.post(
+  "/change-password",
+  joiValidation(changePassword),
+  changePasswordController
+);
 
 // user logout
 
