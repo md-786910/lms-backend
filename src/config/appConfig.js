@@ -104,9 +104,56 @@ function numberToWords(num) {
   return ("Indian Rupee " + inWords(num).trim() + " Only").replace(/\s+/g, " ");
 }
 
+/**
+ * Get date range for a month based on type.
+ *
+ * @param {"current" | "previous" | "next"} type
+ * @param {Date} [baseDate=new Date()]
+ * @returns {{
+ *   startDate: Date,
+ *   endDate: Date,
+ *   monthIndex: number,   // 0–11
+ *   month: number,        // 1–12
+ *   year: number,
+ *   monthName: string
+ * }}
+ */
+function getMonthRange(type = "current", baseDate = new Date()) {
+  const now = new Date(baseDate); // avoid mutating incoming date
+  let month = now.getMonth(); // 0–11
+  let year = now.getFullYear();
+
+  if (type === "previous") {
+    month -= 1;
+  } else if (type === "next") {
+    month += 1;
+  }
+
+  // Normalize year + month (handles month < 0 and > 11)
+  year = year + Math.floor(month / 12);
+  month = ((month % 12) + 12) % 12; // stay in 0–11
+
+  const startDate = new Date(year, month, 1, 0, 0, 0, 0);
+  const endDate = new Date(year, month + 1, 1, 0, 0, 0, 0);
+
+  const monthIndex = month; // 0–11
+  const monthNumber = month + 1; // 1–12
+  const monthName = startDate.toLocaleString("default", { month: "long" });
+
+  return {
+    startDate,
+    endDate,
+    monthIndex,
+    month: monthNumber,
+    year,
+    monthName,
+  };
+}
+
 module.exports = {
   logger,
   convertToDate,
   formatPrice,
   numberToWords,
+  getMonthRange,
 };

@@ -4,6 +4,8 @@ const {
   employeLeaveReject,
   employeLeaveApprove,
   getLeaveDashboard,
+  adminCreateLeaveRequest,
+  getYearlyLeaveSummary,
 } = require("../controllers/leave.controller");
 const { joiValidation } = require("../middleware/validation");
 const { rejectLeaveRequest } = require("../schema/employee/emp.schema");
@@ -17,8 +19,13 @@ router.post(
 );
 router.post("/approve/:id/employee/:employee_id", employeLeaveApprove);
 
-// dashboard
+// Admin create leave
+router.post("/create-leave", adminCreateLeaveRequest);
 
+// dashboard
 router.get("/dashboard", getLeaveDashboard);
+
+// Yearly leave summary
+router.get("/yearly-summary", getYearlyLeaveSummary);
 
 module.exports = router;

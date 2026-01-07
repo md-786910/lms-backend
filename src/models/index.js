@@ -46,6 +46,7 @@ Object.keys(db).forEach((modelName) => {
 });
 
 // sync to true in [development] mode to create tables automatically
+// sync to true in [development] mode to create tables automatically
 if (env === "development") {
   sequelize
     .sync({ alter: true })
@@ -53,7 +54,34 @@ if (env === "development") {
       console.log("Database synced successfully!");
     })
     .catch((err) => {
+      // Handle specific constraint errors gracefully
+      if (
+        err.name === "SequelizeUnknownConstraintError" ||
+        err.original?.code === "42704"
+      ) {
+        console.warn(
+          "Constraint error detected. Trying to sync without altering existing constraints..."
+        );
+        // Try to sync without alter to avoid constraint issues
+        return sequelize
+          .sync({ alter: false })
+          .then(() => {
+            console.log(
+              "Database synced successfully (without altering constraints)!"
+            );
+          })
+          .catch((syncErr) => {
+            console.error(
+              "Error syncing database:",
+              syncErr.message || syncErr
+            );
+            console.warn(
+              "If this persists, you may need to manually fix the database schema or use migrations."
+            );
+          });
+      }
       console.error("Error creating database & tables:", err);
+      throw err;
     });
 }
 

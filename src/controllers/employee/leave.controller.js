@@ -6,6 +6,8 @@ const {
   employeLeaveRepos,
   leaveRequestRepos,
   activityRepos,
+  employeeRepos,
+  userRepos,
 } = require("../../repository/base");
 const AppError = require("../../utils/appError");
 const catchAsync = require("../../utils/catchAsync");
@@ -120,6 +122,7 @@ const createLeaveRequest = catchAsync(async (req, res, next) => {
       company_id,
       employee_id,
       leave_type_id,
+      status: "approved",
       [db.Sequelize.Op.or]: [
         { start_date: { [db.Sequelize.Op.between]: [start, end] } },
         { end_date: { [db.Sequelize.Op.between]: [start, end] } },
@@ -155,7 +158,7 @@ const createLeaveRequest = catchAsync(async (req, res, next) => {
     where: {
       company_id,
       employee_id,
-      id: leave_type_id,
+      leave_id: leave_type_id,
     },
   });
   if (!leave) {
@@ -208,24 +211,34 @@ const createLeaveRequest = catchAsync(async (req, res, next) => {
     reason,
   });
 
+  const employee = await employeeRepos.findOne({
+    attributes: ["first_name"],
+    where: {
+      company_id,
+      id: employee_id,
+    },
+  });
+  const { first_name = "unkown" } = employee;
+
   // history
   await activityRepos.addActivity({
     company_id,
     employee_id,
-    title: `New ${leave_type} request applied`,
-    message: "Leave request applied successfully",
+    title: `${first_name} has requested new ${leave_type}`,
+    message: "Leave requested applied successfully",
     role: "employee",
   });
 
   res.status(200).json({
     status: true,
-    message: "Leave request applied successfully",
+    message: "Leave requested applied successfully",
     data: null,
   });
 });
 
 // cancel leave request
 const cancelLeaveRequest = catchAsync(async (req, res, next) => {
+  const { emitToUser } = require("../../config/initsocket");
   const { id: employee_id, company_id } = req.user;
   const { leave_request_id } = req.params;
 
@@ -240,13 +253,17 @@ const cancelLeaveRequest = catchAsync(async (req, res, next) => {
     return next(new AppError("Leave request not found", STATUS_CODE.NOT_FOUND));
   }
 
-  await activityRepos.addActivity({
-    company_id,
-    employee_id,
-    title: `Leave request cancelled`,
-    message: "Leave request cancelled successfully",
-    role: "employee",
+  // get admin
+  const usersAdmin = await userRepos.findAll({
+    where: {
+      company_id,
+      role: "admin",
+    },
   });
+  for (const user of usersAdmin) {
+    const notifyToAdmin = `admin_${user.id}`;
+    await emitToUser(notifyToAdmin, "notify:user", {});
+  }
   // remove
   await leave.destroy();
   res.status(200).json({
