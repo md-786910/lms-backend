@@ -91,7 +91,16 @@ module.exports.authenticateAdmin = async (req, res, next) => {
         },
       });
 
-      req.user = verifyToken(userToken?.token).sub;
+      if (!userToken) {
+        return next(
+          new AppError(
+            "Session not found or expired",
+            STATUS_CODE.UNAUTHORIZED
+          )
+        );
+      }
+
+      req.user = verifyToken(userToken.token).sub;
       const user = await userRepos.findOne({
         where: {
           email: req.user.email,
