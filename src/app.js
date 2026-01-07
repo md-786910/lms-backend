@@ -147,6 +147,7 @@ employeeRouter.use("/dashboard", employeeDashboardRouter);
 employeeRouter.use("/profile", profileRouter);
 employeeRouter.use("/notify", notificationRouter);
 employeeRouter.use("/employeFile", employeeFileRouter);
+employeeRouter.use("/user", userRoute);
 // employeeRouter.use("/salary", leaveRouter);
 
 // Handling 404 errors
