@@ -370,6 +370,45 @@ const deleteNewUser = catchAsync(async (req, res, next) => {
   });
 });
 
+const changePassword = catchAsync(async (req, res, next) => {
+  const { password } = req.body;
+  const { id, role, company_id } = req.user;
+
+  const hashPass = await hashPassword(password);
+
+  if (role === ROLE.ADMIN) {
+    await userRepos.update(
+      {
+        password: hashPass,
+        password_without_hash: password,
+      },
+      {
+        where: {
+          id,
+          company_id,
+        },
+      }
+    );
+  } else if (role === ROLE.EMPLOYEE) {
+    await employeeRepos.update(
+      {
+        password: hashPass,
+      },
+      {
+        where: {
+          id,
+          company_id,
+        },
+      }
+    );
+  }
+
+  res.status(STATUS_CODE.OK).json({
+    status: true,
+    message: "Password changed successfully",
+  });
+});
+
 module.exports = {
   addNewUser,
   loginUser,
@@ -378,4 +417,5 @@ module.exports = {
   verifyEmployeeCreatePassword,
   getAllUser,
   deleteNewUser,
+  changePassword,
 };
