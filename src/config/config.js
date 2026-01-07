@@ -3,9 +3,8 @@ module.exports = {
   development: {
     username: "postgres",
     password: "postgres",
-    port: 37432,
-    database: "lms",
-    host: "localhost",
+    database: "lms1",
+    host: "db",
     dialect: "postgres",
     define: {
       separate: true,
