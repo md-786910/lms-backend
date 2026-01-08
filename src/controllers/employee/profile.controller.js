@@ -140,10 +140,36 @@ const getSalary = catchAsync(async (req, res, next) => {
   });
 });
 
+// upload profile pic
+const uploadProfile = catchAsync(async (req, res, next) => {
+  const { id, company_id } = req.user;
+  if (!id || !company_id) {
+    return next(new AppError("User not found", STATUS_CODE.NOT_FOUND));
+  }
+
+  const employee = await employeeRepos.findOne({
+    where: { id, company_id },
+  });
+
+  if (!employee) {
+    return next(new AppError("Employee not found", STATUS_CODE.NOT_FOUND));
+  }
+
+  employee.profile = req.body?.profile;
+  await employee.save();
+
+  res.status(STATUS_CODE.OK).json({
+    success: true,
+    message: "Profile picture updated successfully",
+    data: employee,
+  });
+});
+
 module.exports = {
   getProfile,
   getAddress,
   getDocument,
   getPersonalInfo,
   getSalary,
+  uploadProfile,
 };

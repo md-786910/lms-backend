@@ -5,17 +5,16 @@ const {
   getDocument,
   getSalary,
   getPersonalInfo,
+  uploadProfile,
 } = require("../../controllers/employee/profile.controller");
 
 const profileRouter = express.Router();
 
 profileRouter.route("/basic").get(getProfile);
+profileRouter.route("/address").get(getAddress);
+profileRouter.route("/personal-info").get(getPersonalInfo);
+profileRouter.route("/document").get(getDocument);
+profileRouter.route("/salary").get(getSalary);
+profileRouter.route("/upload-profile").put(uploadProfile);
 
-profileRouter.get("/address", getAddress);
-
-profileRouter.get("/personal-info", getPersonalInfo);
-
-profileRouter.get("/document", getDocument);
-
-profileRouter.get("/salary", getSalary);
 module.exports = profileRouter;
