@@ -334,7 +334,9 @@ const downloadLeaveReport = catchAsync(async (req, res, next) => {
       //   attributes: ["leave_type"],
       // },
     ],
-    order: [["createdAt", "DESC"]],
+    order: [
+      [{ model: employeeRepos, as: "employee" }, "first_name", "ASC"],
+    ],
   });
 
   for (const key in records) {
