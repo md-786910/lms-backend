@@ -20,7 +20,12 @@ const getAllEmployeLeavs = catchAsync(async (req, res, next) => {
   if (!query) {
     return next(new AppError("query not found", STATUS_CODE.NOT_FOUND));
   }
-  const { search = "", status = "all", leave_type_id = 0 } = query;
+  const {
+    search = "",
+    status = "all",
+    leave_type_id = 0,
+    employee_id,
+  } = query;
   const { company_id } = req.user;
   let where = {
     company_id,
@@ -30,6 +35,12 @@ const getAllEmployeLeavs = catchAsync(async (req, res, next) => {
   }
   if (status && status !== "all") {
     where.status = status;
+  }
+  if (employee_id) {
+    const parsedEmployeeId = parseInt(employee_id, 10);
+    if (!Number.isNaN(parsedEmployeeId)) {
+      where.employee_id = parsedEmployeeId;
+    }
   }
 
   console.log({ leave_type_id });
