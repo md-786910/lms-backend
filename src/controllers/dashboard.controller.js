@@ -31,6 +31,55 @@ const getDashboard = catchAsync(async (req, res, next) => {
     where: { company_id, is_suspended: false },
   });
 
+  const pendingLeaveCount = await leaveRequestRepos.count({
+    where: { company_id, status: "pending" },
+  });
+
+  const pendingLeaveRequests = await leaveRequestRepos.findAll({
+    where: { company_id, status: "pending" },
+    include: [
+      {
+        model: employeeRepos,
+        as: "employee",
+        attributes: [
+          "id",
+          "first_name",
+          "last_name",
+          "employee_no",
+          "department_id",
+        ],
+      },
+      {
+        model: employeLeaveRepos,
+        as: "leave_type",
+        attributes: ["id", "leave_type"],
+      },
+    ],
+    order: [["createdAt", "DESC"]],
+    limit: 5,
+  });
+
+  for (const request of pendingLeaveRequests) {
+    if (!request.employee) {
+      continue;
+    }
+    let prefixName = "EMP";
+    const departmentId = request.employee.department_id;
+    if (departmentId) {
+      const prefix = await prefixRepos.findOne({
+        attributes: ["name"],
+        where: {
+          id: departmentId,
+          company_id,
+        },
+      });
+      prefixName = prefix?.name ?? prefixName;
+    }
+    if (!request.employee.employee_no) {
+      request.employee.employee_no = `${prefixName}-${request.employee?.id}`;
+    }
+  }
+
   const startOfToday = dayjs().tz("Asia/Kolkata").startOf("day").toDate();
   const endOfToday = dayjs().tz("Asia/Kolkata").endOf("day").toDate();
   let employeesOnLeaveToday = await leaveRequestRepos.findAll({
@@ -241,8 +290,10 @@ const getDashboard = catchAsync(async (req, res, next) => {
     data: {
       total_employee,
       active_employee,
+      pending_leave: pendingLeaveCount,
       on_leave_today_count: employeesOnLeaveToday.length,
       on_leave_today: employeesOnLeaveToday,
+      pending_leave_requests: pendingLeaveRequests,
       activities,
       previous_month_leaves,
       current_month_leaves,
