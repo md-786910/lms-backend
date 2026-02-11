@@ -164,15 +164,7 @@ const createLeaveRequest = catchAsync(async (req, res, next) => {
   if (!leave) {
     return next(new AppError("Leave does not found", STATUS_CODE.NOT_FOUND));
   }
-  const { leave_count, leave_remaing, leave_type } = leave;
-  if (total_days > leave_remaing) {
-    return next(
-      new AppError(
-        `You can't apply more than ${leave_remaing} days of ${leave_type} leave`,
-        STATUS_CODE.BAD_REQUEST
-      )
-    );
-  }
+  const { leave_type } = leave;
 
   // Step 7: Create leave request (uncomment and customize as needed)
   const transaction = await db.sequelize.transaction();

@@ -193,18 +193,6 @@ const employeLeaveApprove = catchAsync(async (req, res, next) => {
     return next(new AppError("Leave type not found", STATUS_CODE.NOT_FOUND));
   }
 
-  if (
-    Number(checkLeaveAvailable.leave_remaing) - Number(leave.total_days || 0) <
-      0 ||
-    Number(checkLeaveAvailable.leave_remaing) < 0
-  ) {
-    return next(
-      new AppError(
-        "Your leave has ended. Kindly reach out to your administrator for further help."
-      )
-    );
-  }
-
   checkLeaveAvailable.leave_remaing =
     Number(checkLeaveAvailable.leave_remaing) - Number(leave.total_days || 0);
   checkLeaveAvailable.leave_used =
@@ -392,20 +380,7 @@ const adminCreateLeaveRequest = catchAsync(async (req, res, next) => {
     );
   }
 
-  // Step 6: Check leave balance if status is approved
-  if (status === "approved") {
-    const { leave_remaing } = leaveType;
-    if (total_days > leave_remaing) {
-      return next(
-        new AppError(
-          `Insufficient leave balance. Available: ${leave_remaing} days, Requested: ${total_days} days`,
-          STATUS_CODE.BAD_REQUEST
-        )
-      );
-    }
-  }
-
-  // Step 7: Create leave request in transaction
+  // Step 6: Create leave request in transaction
   const transaction = await db.sequelize.transaction();
   try {
     const leaveRequest = await leaveRequestRepos.create(
