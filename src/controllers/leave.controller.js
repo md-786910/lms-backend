@@ -350,7 +350,13 @@ const adminCreateLeaveRequest = catchAsync(async (req, res, next) => {
 
   // Step 4: Validate leave type exists
   const leaveType = await employeLeaveRepos.findOne({
-    attributes: ["id", "leave_count", "leave_type", "leave_remaing"],
+    attributes: [
+      "id",
+      "leave_count",
+      "leave_type",
+      "leave_remaing",
+      "leave_used",
+    ],
     where: {
       company_id,
       employee_id,
@@ -371,7 +377,7 @@ const adminCreateLeaveRequest = catchAsync(async (req, res, next) => {
   const msPerDay = 1000 * 60 * 60 * 24;
   const calculatedDays = Math.floor((end - start) / msPerDay) + 1;
 
-  if (total_days > calculatedDays) {
+  if (Number(total_days) > calculatedDays) {
     return next(
       new AppError(
         `Total days (${total_days}) exceeds the date range (${calculatedDays} days)`,
@@ -401,8 +407,10 @@ const adminCreateLeaveRequest = catchAsync(async (req, res, next) => {
 
     // Step 8: If status is approved, update leave balance
     if (status === "approved") {
-      leaveType.leave_remaing -= total_days;
-      leaveType.leave_used = (leaveType.leave_used || 0) + total_days;
+      leaveType.leave_remaing =
+        Number(leaveType.leave_remaing || 0) - Number(total_days || 0);
+      leaveType.leave_used =
+        Number(leaveType.leave_used || 0) + Number(total_days || 0);
       await leaveType.save({ transaction });
 
       // Add activity log

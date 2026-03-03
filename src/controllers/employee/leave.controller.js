@@ -154,7 +154,13 @@ const createLeaveRequest = catchAsync(async (req, res, next) => {
   }
 
   const leave = await employeLeaveRepos.findOne({
-    attributes: ["id", "leave_count", "leave_type", "leave_remaing"],
+    attributes: [
+      "id",
+      "leave_count",
+      "leave_type",
+      "leave_remaing",
+      "leave_used",
+    ],
     where: {
       company_id,
       employee_id,
