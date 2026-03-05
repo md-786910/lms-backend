@@ -16,10 +16,7 @@
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
           sans-serif;
         background-color: #f8f9fa;
-        padding-left: 20px;
-        padding-right: 20px;
-        padding-top: 15px;
-        padding-bottom: 15px;
+        padding: 20px;
         color: #333;
       }
 
@@ -30,19 +27,20 @@
         border-radius: 8px;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         overflow: hidden;
+        padding: 24px;
       }
 
       /* Header Section */
       .header {
         background: white;
-        padding: 24px 32px;
+        padding: 20px 24px;
         border-bottom: 1px solid #e5e5e5;
       }
 
       .nav-tabs {
         display: flex;
-        gap: 32px;
-        margin-bottom: 24px;
+        gap: 24px;
+        margin-bottom: 20px;
       }
 
       .nav-tab {
@@ -50,7 +48,7 @@
         font-weight: 500;
         color: #6b7280;
         cursor: pointer;
-        padding-bottom: 8px;
+        padding-bottom: 6px;
         border-bottom: 2px solid transparent;
       }
 
@@ -68,7 +66,7 @@
       .month-selector {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
         font-size: 14px;
         color: #374151;
       }
@@ -83,7 +81,7 @@
 
       .header-actions {
         display: flex;
-        gap: 16px;
+        gap: 12px;
       }
 
       .btn-link {
@@ -97,131 +95,54 @@
       }
 
       /* Summary Section */
-      /* Summary Section */
       .summary-section {
         display: flex;
         align-items: center;
-        padding: 32px;
-        gap: 48px;
+        padding: 15px 32px;
+        gap: 32px;
       }
 
-      /* Logo container takes minimal space */
       .logo-container {
-        flex: 0 0 auto; /* no grow, no shrink */
+        flex: 0 0 auto;
       }
 
-      /* Logo size */
       .logo {
-        height: 60px; /* adjust as needed */
+        height: 60px;
         width: auto;
         object-fit: contain;
       }
 
-      /* Summary details take remaining space, but content is centered */
-      .summary-details {
-        flex: 1; /* take remaining space */
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        max-width: 50%; /* only half width */
-        margin-left: auto; /* center it horizontally in remaining space */
-      }
-
-      /* Take-home salary styling */
-      .take-home {
-        font-size: 28px;
-        font-weight: 600;
-        margin-bottom: 16px;
-      }
-
-      .breakdown-item {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-      }
-
-      .breakdown-label {
-        font-weight: 500;
-        color: #555;
-      }
-
-      .breakdown-amount {
-        font-weight: 600;
-        margin-top: 4px;
-      }
-
-      .chart-container {
-        position: relative;
-      }
-
-      .donut-chart {
-        width: 120px;
-        height: 120px;
-        border-radius: 50%;
-        background: conic-gradient(#ef4444 0deg 144deg, #10b981 144deg 360deg);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        position: relative;
-      }
-
-      .donut-chart::before {
-        content: "";
-        width: 70px;
-        height: 70px;
-        background: white;
-        border-radius: 50%;
-        position: absolute;
-      }
-
-      .chart-label {
-        position: absolute;
-        z-index: 2;
-        text-align: center;
-        font-weight: 600;
-        color: #374151;
-      }
-
-      .chart-month {
-        font-size: 12px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-      }
-
-      .chart-year {
-        font-size: 16px;
-        margin-top: 2px;
-      }
-
       .summary-details {
         flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        max-width: 50%;
+        margin-left: auto;
       }
 
-      .take-home-label {
-        font-size: 14px;
-        color: #6b7280;
-        margin-bottom: 4px;
-      }
-
-      .take-home-amount {
-        font-size: 32px;
+      .take-home {
+        font-size: 28px;
         font-weight: 700;
-        color: #111827;
+        margin-bottom: 12px;
       }
 
       .breakdown {
         display: flex;
-        gap: 10px;
+        gap: 24px;
       }
 
       .breakdown-item {
         display: flex;
         flex-direction: column;
       }
+      .deductions-color {
+        color: tomato;
+      }
 
       .breakdown-label {
         font-size: 12px;
-        color: #6b7280;
+        /* color: #6b7280; */
         margin-bottom: 4px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
@@ -232,17 +153,9 @@
         font-weight: 600;
       }
 
-      .deductions {
-        color: #ef4444;
-      }
-
-      .gross-pay {
-        color: #374151;
-      }
-
       /* Company Info */
       .company-info {
-        padding: 0 24px 24px;
+        padding: 16px 24px 15px;
         border-bottom: 1px solid #e5e5e5;
       }
 
@@ -260,21 +173,21 @@
 
       /* Payslip Details */
       .payslip-details {
-        padding: 32px;
+        padding: 24px 24px 32px;
       }
 
       .payslip-title {
         font-size: 18px;
         font-weight: 700;
         color: #111827;
-        margin-bottom: 24px;
+        margin-bottom: 20px;
       }
 
       .employee-summary {
         background: #f9fafb;
         border-radius: 8px;
-        /* padding: 20px; */
-        margin-bottom: 32px;
+        padding: 20px;
+        margin-bottom: 28px;
       }
 
       .section-title {
@@ -286,27 +199,26 @@
 
       .employee-info-grid {
         display: flex;
-        align-items: center;
-        gap: 120px;
+        align-items: flex-start;
+        gap: 64px;
       }
 
       .employee-left-column {
         display: flex;
         flex-direction: column;
-        gap: 16px;
+        gap: 12px;
       }
-
-      /* emd */
 
       .employee-right-column {
         display: flex;
         justify-content: center;
         align-items: flex-start;
       }
+
       .info-row {
         display: grid;
-        grid-template-columns: 160px 1fr; /* Fixed width for labels */
-        gap: 20px;
+        grid-template-columns: 160px 1fr;
+        gap: 12px;
         align-items: center;
       }
 
@@ -325,7 +237,7 @@
         background: #ecfdf5;
         border: 1px solid #d1fae5;
         border-radius: 8px;
-        padding: 16px;
+        padding: 16px 20px;
         text-align: center;
         width: 220px;
         min-width: 200px;
@@ -346,15 +258,15 @@
       .pay-details {
         font-size: 12px;
         color: #6b7280;
-        margin-top: 8px;
+        margin-top: 6px;
       }
 
       /* Earnings and Deductions Table */
       .earnings-deductions {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 32px;
-        margin-bottom: 32px;
+        gap: 24px;
+        margin-bottom: 28px;
       }
 
       .table-container {
@@ -365,7 +277,7 @@
 
       .table-header {
         background: #f3f4f6;
-        padding: 12px 16px;
+        padding: 10px 16px;
         font-size: 14px;
         font-weight: 600;
         color: #374151;
@@ -379,8 +291,8 @@
       .table-row {
         display: grid;
         grid-template-columns: 2fr 1fr 1fr;
-        gap: 16px;
-        padding: 12px 16px;
+        gap: 12px;
+        padding: 10px 16px;
         border-bottom: 1px solid #e5e7eb;
       }
 
@@ -409,7 +321,7 @@
         background: #f0f9ff;
         border: 2px solid #0ea5e9;
         border-radius: 8px;
-        padding: 20px;
+        padding: 18px 20px;
         text-align: center;
       }
 
@@ -453,7 +365,7 @@
         .summary-section {
           flex-direction: column;
           text-align: center;
-          gap: 24px;
+          gap: 16px;
         }
 
         .breakdown {
@@ -462,11 +374,11 @@
 
         .earnings-deductions {
           grid-template-columns: 1fr;
-          gap: 24px;
+          gap: 16px;
         }
 
         .employee-info-grid {
-          grid-template-columns: 1fr;
+          flex-direction: column;
           gap: 16px;
         }
 
@@ -488,18 +400,18 @@
             class="logo"
           />
         </div>
-      
+
         <div class="summary-details">
           <div class="take-home">
             <div class="take-home-amount" id="take-home-amount">
               <%= salary.net_salary %>
             </div>
           </div>
-        
+
           <div class="breakdown">
             <div class="breakdown-item">
-              <div class="breakdown-label deductions">Deductions</div>
-              <div class="breakdown-amount deductions" id="deductions-amount">
+              <div class="breakdown-label deductions deductions-color">Deductions</div>
+              <div class="breakdown-amount deductions deductions-color" id="deductions-amount">
                 <%= salary?.deduction %>
               </div>
             </div>
@@ -537,49 +449,50 @@
                 <div class="info-row">
                   <span class="info-label">Employee Name</span>
                   <span class="info-value" id="employee-name">
-                    <%= employee?.first_name %> <%= employee?.last_name %></span
-                  >
+                    <%= employee?.first_name %> <%= employee?.last_name %>
+                  </span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">Designation</span>
                   <span class="info-value" id="designation">
-                    <%= employee?.designation?.title %></span
-                  >
+                    <%= employee?.designation?.title %>
+                  </span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">Pay Period</span>
                   <span class="info-value" id="pay-period">
-                    <%= pay_period %></span
-                  >
+                    <%= pay_period %>
+                  </span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">PF A/C Number</span>
                   <span class="info-value" id="pf-number">
-                    <%= employee?.EmployeePersonalInformation?.epf_no %></span
-                  >
+                    <%= employee?.EmployeePersonalInformation?.epf_no %>
+                  </span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">Employee Net Pay</span>
-                  <span class="info-value" id="employee-net-pay-label"
-                    ><%= salary?.net_salary %></span
-                  >
+                  <span class="info-value" id="employee-net-pay-label">
+                    <%= salary?.net_salary %>
+                  </span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">Date of Joining</span>
                   <span class="info-value" id="joining-date">
-                    <%= new Date(employee?.date_of_joining).toLocaleDateString()
-                    %></span
-                  >
+                    <%= new Date(employee?.date_of_joining).toLocaleDateString() %>
+                  </span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">Pay Date</span>
-                  <span class="info-value" id="pay-date"> <%= pay_date %></span>
+                  <span class="info-value" id="pay-date">
+                    <%= pay_date %>
+                  </span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">ESI Number</span>
                   <span class="info-value" id="esi-number">
-                    <%= employee?.EmployeePersonalInformation?.esic_no %></span
-                  >
+                    <%= employee?.EmployeePersonalInformation?.esic_no %>
+                  </span>
                 </div>
               </div>
             </div>
@@ -604,11 +517,8 @@
             <div class="table-content">
               <div class="table-header table-row">
                 <div class="table-cell" style="font-weight: 600">Earnings</div>
-                <div class="table-cell amount" style="font-weight: 600">
-                  Amount
-                </div>
+                <div class="table-cell amount" style="font-weight: 600">Amount</div>
               </div>
-
               <div class="table-row">
                 <div class="table-cell">Basic</div>
                 <div class="table-cell amount"><%= salary?.base_salary %></div>
@@ -632,31 +542,15 @@
           <div class="table-container">
             <div class="table-content">
               <div class="table-header table-row">
-                <div class="table-cell" style="font-weight: 600">
-                  Deductions
-                </div>
-                <div class="table-cell amount" style="font-weight: 600">
-                  Amount
-                </div>
-                <div class="table-cell amount" style="font-weight: 600">
-                  YTD
-                </div>
+                <div class="table-cell" style="font-weight: 600">Deductions</div>
+                <div class="table-cell amount" style="font-weight: 600">Amount</div>
+                <div class="table-cell amount" style="font-weight: 600">YTD</div>
               </div>
               <div class="table-row">
                 <div class="table-cell">EPF Contribution</div>
                 <div class="table-cell amount"><%= total_epf %></div>
                 <div class="table-cell amount"><%= epfYTD %></div>
               </div>
-              <!-- <div class="table-row">
-                <div class="table-cell">Employee State Insurance</div>
-                <div class="table-cell amount">₹454.00</div>
-                <div class="table-cell amount">₹1,265.00</div>
-              </div>
-              <div class="table-row">
-                <div class="table-cell">Income Tax</div>
-                <div class="table-cell amount">₹8,370.00</div>
-                <div class="table-cell amount">₹18,458.00</div>
-              </div> -->
               <div class="table-row total">
                 <div class="table-cell">Total Deductions</div>
                 <div class="table-cell amount" id="total-deductions">
@@ -673,13 +567,13 @@
           <div class="final-total-text">
             Total Net Payable
             <span class="final-amount" id="final-net-pay">
-              <%= salary?.net_salary %></span
-            >
+              <%= salary?.net_salary %>
+            </span>
             <div class="amount-words"><%= amount_in_inr %></div>
           </div>
         </div>
       </div>
-      <div style="text-align: center">
+      <div style="text-align: center; margin-top: 20px;">
         <p>
           ********** THIS IS A COMPUTER GENERATED PAYSLIP, NOT REQUIRING
           SIGNATURE **********
