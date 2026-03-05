@@ -16,7 +16,10 @@
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
           sans-serif;
         background-color: #f8f9fa;
-        padding: 20px;
+        padding-left: 20px;
+        padding-right: 20px;
+        padding-top: 15px;
+        padding-bottom: 15px;
         color: #333;
       }
 
@@ -436,13 +439,20 @@
     <div class="container" id="payslip-container">
       <!-- Summary Section -->
       <div class="summary-section">
-        <div class="chart-container">
+        <!-- <div class="chart-container">
           <div class="donut-chart">
             <div class="chart-label">
               <div class="chart-month"><%= month_name %></div>
               <div class="chart-year"><%= year %></div>
             </div>
           </div>
+        </div> -->
+        <div class="logo-container">
+          <img
+            src="data:image/png;base64,<%= logo %>"
+            alt="Logo"
+            class="logo"
+          />
         </div>
         <div class="summary-details">
           <div class="take-home">
@@ -465,13 +475,6 @@
               </div>
             </div>
           </div>
-        </div>
-        <div class="logo-container">
-          <img
-            src="data:image/png;base64,<%= logo %>"
-            alt="Logo"
-            class="logo"
-          />
         </div>
       </div>
 
@@ -569,53 +572,18 @@
                 <div class="table-cell amount" style="font-weight: 600">
                   Amount
                 </div>
-                <div class="table-cell amount" style="font-weight: 600">
-                  YTD
-                </div>
               </div>
 
               <div class="table-row">
                 <div class="table-cell">Basic</div>
                 <div class="table-cell amount"><%= salary?.base_salary %></div>
-                <div class="table-cell amount"><%= basicYTD %></div>
               </div>
-              <!-- <div class="table-row">
-                <div class="table-cell">Basic Arrear</div>
-                <div class="table-cell amount">₹15,210.00</div>
-                <div class="table-cell amount">₹1,86,810.00</div>
-              </div> -->
               <div class="table-row">
                 <div class="table-cell">House Rent Allowance</div>
                 <div class="table-cell amount">
                   <%= employee?.employee_salary?.hra %>
                 </div>
-                <div class="table-cell amount"><%= hraYTD %></div>
               </div>
-              <!-- <div class="table-row">
-                <div class="table-cell">House Rent Allowance Arrear</div>
-                <div class="table-cell amount">₹7,606.00</div>
-                <div class="table-cell amount">₹93,406.00</div>
-              </div> -->
-              <!-- <div class="table-row">
-                <div class="table-cell">Conveyance Allowance</div>
-                <div class="table-cell amount">₹500.00</div>
-                <div class="table-cell amount">₹2,000.00</div>
-              </div> -->
-              <!-- <div class="table-row">
-                <div class="table-cell">Transport Allowance</div>
-                <div class="table-cell amount">₹500.00</div>
-                <div class="table-cell amount">₹2,000.00</div>
-              </div> -->
-              <!-- <div class="table-row">
-                <div class="table-cell">Fixed Allowance</div>
-                <div class="table-cell amount">₹10,481.00</div>
-                <div class="table-cell amount">₹26,366.00</div>
-              </div>
-              <div class="table-row">
-                <div class="table-cell">Fixed Allowance Arrear</div>
-                <div class="table-cell amount">₹-10,453.00</div>
-                <div class="table-cell amount">₹60,332.00</div>
-              </div> -->
               <div class="table-row total">
                 <div class="table-cell">Gross Earnings</div>
                 <div class="table-cell amount" id="gross-earnings">
