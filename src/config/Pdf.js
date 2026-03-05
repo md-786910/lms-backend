@@ -12,14 +12,26 @@ class Pdf {
   static async initBrowser() {
     if (!Pdf.browser) {
       console.log("launching puppeteer...");
-      Pdf.browser = await puppeteer.launch({
+      
+      const options = {
         headless: "new",
         args: [
           "--no-sandbox",
           "--disable-setuid-sandbox",
           "--disable-dev-shm-usage",
+          "--disable-gpu",
         ],
-      });
+      };
+
+      // Standard approach: Detect environment and use system chromium on Linux if available
+      if (process.platform === "linux") {
+        const chromiumPath = "/usr/bin/chromium-browser";
+        if (fs.existsSync(chromiumPath)) {
+          options.executablePath = chromiumPath;
+        }
+      }
+
+      Pdf.browser = await puppeteer.launch(options);
     }
     return Pdf.browser;
   }
