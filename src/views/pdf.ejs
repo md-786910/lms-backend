@@ -97,11 +97,57 @@
       }
 
       /* Summary Section */
+      /* Summary Section */
       .summary-section {
-        padding: 32px;
         display: flex;
-        gap: 48px;
         align-items: center;
+        padding: 32px;
+        gap: 48px;
+      }
+
+      /* Logo container takes minimal space */
+      .logo-container {
+        flex: 0 0 auto; /* no grow, no shrink */
+      }
+
+      /* Logo size */
+      .logo {
+        height: 60px; /* adjust as needed */
+        width: auto;
+        object-fit: contain;
+      }
+
+      /* Summary details take remaining space, but content is centered */
+      .summary-details {
+        flex: 1; /* take remaining space */
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        max-width: 50%; /* only half width */
+        margin-left: auto; /* center it horizontally in remaining space */
+      }
+
+      /* Take-home salary styling */
+      .take-home {
+        font-size: 28px;
+        font-weight: 600;
+        margin-bottom: 16px;
+      }
+
+      .breakdown-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .breakdown-label {
+        font-weight: 500;
+        color: #555;
+      }
+
+      .breakdown-amount {
+        font-weight: 600;
+        margin-top: 4px;
       }
 
       .chart-container {
@@ -151,10 +197,6 @@
         flex: 1;
       }
 
-      .take-home {
-        margin-bottom: 24px;
-      }
-
       .take-home-label {
         font-size: 14px;
         color: #6b7280;
@@ -169,7 +211,7 @@
 
       .breakdown {
         display: flex;
-        gap: 48px;
+        gap: 10px;
       }
 
       .breakdown-item {
@@ -200,7 +242,7 @@
 
       /* Company Info */
       .company-info {
-        padding: 0 32px 24px;
+        padding: 0 24px 24px;
         border-bottom: 1px solid #e5e5e5;
       }
 
@@ -439,14 +481,6 @@
     <div class="container" id="payslip-container">
       <!-- Summary Section -->
       <div class="summary-section">
-        <!-- <div class="chart-container">
-          <div class="donut-chart">
-            <div class="chart-label">
-              <div class="chart-month"><%= month_name %></div>
-              <div class="chart-year"><%= year %></div>
-            </div>
-          </div>
-        </div> -->
         <div class="logo-container">
           <img
             src="data:image/png;base64,<%= logo %>"
@@ -454,13 +488,14 @@
             class="logo"
           />
         </div>
+      
         <div class="summary-details">
           <div class="take-home">
             <div class="take-home-amount" id="take-home-amount">
               <%= salary.net_salary %>
             </div>
           </div>
-
+        
           <div class="breakdown">
             <div class="breakdown-item">
               <div class="breakdown-label deductions">Deductions</div>
