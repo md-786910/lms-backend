@@ -12,29 +12,26 @@ class Pdf {
   static async initBrowser() {
     if (!Pdf.browser) {
       console.log("launching puppeteer...");
-      Pdf.browser = await puppeteer.launch({
-        headless: true,
-        executablePath: "/usr/bin/chromium-browser",
+      
+      const options = {
+        headless: "new",
         args: [
-          "--no-sandbox", // Disable the sandbox for compatibility and speed
-          "--disable-setuid-sandbox", // Disable setuid sandbox to avoid permission issues
-          "--disable-dev-shm-usage", // Use /tmp instead of /dev/shm to prevent issues in Docker
-          "--disable-gpu", // Disable GPU to save resources (since rendering PDF doesn't need GPU)
-          "--disable-software-rasterizer", // Disable the software rasterizer to reduce resource usage
-          "--no-zygote", // Avoid spawning a new process for Zygote (a fork of the browser process)
-          "--single-process", // Run everything in a single process to save memory
-          "--disable-extensions", // Disable all browser extensions
-          "--disable-background-networking", // Reduce unnecessary network requests
-          "--disable-default-apps", // Don't install default apps
-          "--disable-sync", // Disable syncing of data to reduce resource usage
-          "--metrics-recording-only", // Disable unnecessary metrics recording
-          "--no-first-run", // Skip first run tasks
-          "--no-zygote", // Reduce the number of processes spawned
-          "--disable-crash-reporter", // Disable crash reporting to save resources
-          "--disable-logging", // Disable logging to save resources
-          "--window-size=1280x1024", // Set a fixed window size for consistency
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+          "--disable-gpu",
         ],
-      });
+      };
+
+      // Standard approach: Detect environment and use system chromium on Linux if available
+      if (process.platform === "linux") {
+        const chromiumPath = "/usr/bin/chromium-browser";
+        if (fs.existsSync(chromiumPath)) {
+          options.executablePath = chromiumPath;
+        }
+      }
+
+      Pdf.browser = await puppeteer.launch(options);
     }
     return Pdf.browser;
   }

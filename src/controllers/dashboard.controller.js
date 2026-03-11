@@ -371,23 +371,25 @@ const sendLeaveReport = catchAsync(async (req, res, next) => {
 const downloadLeaveReport = catchAsync(async (req, res, next) => {
   const { company_id } = req.user;
 
+  const range = getMonthRange("previous");
+  const { startDate, endDate } = range;
+
   const records = await leaveRequestRepos.findAll({
-    where: { company_id },
+    where: {
+      company_id,
+      start_date: {
+        [Op.gte]: startDate,
+        [Op.lt]: endDate,
+      },
+    },
     include: [
       {
         model: employeeRepos,
         as: "employee",
         attributes: ["first_name", "last_name", "employee_no"],
       },
-      // {
-      //   model: employeLeaveRepos,
-      //   as: "leave_type",
-      //   attributes: ["leave_type"],
-      // },
     ],
-    order: [
-      [{ model: employeeRepos, as: "employee" }, "first_name", "ASC"],
-    ],
+    order: [[{ model: employeeRepos, as: "employee" }, "first_name", "ASC"]],
   });
 
   for (const key in records) {
