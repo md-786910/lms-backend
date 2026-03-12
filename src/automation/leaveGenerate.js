@@ -1,93 +1,88 @@
 require("dotenv").config();
 const db = require("../models");
 const { Op } = require("sequelize");
-const { leaveRequestRepos, employeeRepos, companyRepos } = require("../repository/base");
+const { leaveRequestRepos, employeeRepos } = require("../repository/base");
 const sendEmail = require("../utils/sendMail");
 const buildHtmlReport = require("../utils/leaveReportTemplate");
-const { getMonthRange } = require("../config/appConfig");
+
+function getPreviousMonthRange() {
+  const now = new Date();
+
+  const currentMonth = now.getMonth(); // 0–11
+  const currentYear = now.getFullYear();
+
+  const prevMonthIndex = currentMonth === 0 ? 11 : currentMonth - 1;
+  const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+
+  const startDate = new Date(prevYear, prevMonthIndex, 1, 0, 0, 0, 0);
+  const endDate = new Date(prevYear, prevMonthIndex + 1, 1, 0, 0, 0, 0);
+
+  const prevMonth = prevMonthIndex + 1; // 1–12
+  const monthName = startDate.toLocaleString("default", { month: "long" });
+
+  return { startDate, endDate, prevMonth, prevYear, monthName };
+}
 
 async function generateApprovedLeaveSummary() {
   try {
-    const range = getMonthRange("previous");
-    const { startDate, endDate, monthName, year } = range;
+    const range = getPreviousMonthRange();
+    const { startDate, endDate, monthName, prevYear } = range;
 
-    const companies = await companyRepos.findAll({
-      // You can add more filtering here if needed, 
-      // e.g., only companies with active subscriptions
-    });
-
-    for (const company of companies) {
-      console.log(`Processing report for company: ${company.company_name} (ID: ${company.id})`);
-
-      // Get all active employees for this company with their leave totals
-      const results = await employeeRepos.findAll({
-        where: {
-          is_active: true,
-          company_id: company.id,
-        },
-        attributes: [
-          "id",
-          "first_name",
-          "last_name",
-          "email",
-          [
+    // Get all active employees with their leave totals (including those with 0 leaves)
+    const results = await employeeRepos.findAll({
+      where: {
+        is_active: true,
+        company_id: 2, // leanport company
+      },
+      attributes: [
+        "id",
+        "first_name",
+        "last_name",
+        "email",
+        [
+          db.sequelize.fn(
+            "COALESCE",
             db.sequelize.fn(
-              "COALESCE",
-              db.sequelize.fn(
-                "SUM",
-                db.sequelize.col("leaveRequests.total_days")
-              ),
-              0
+              "SUM",
+              db.sequelize.col("leaveRequests.total_days"),
             ),
-            "total_leave",
-          ],
+            0,
+          ),
+          "total_leave",
         ],
-        include: [
-          {
-            model: leaveRequestRepos,
-            as: "leaveRequests",
-            attributes: [],
-            required: false,
-            where: {
-              status: "approved",
-              start_date: {
-                [Op.gte]: startDate,
-                [Op.lt]: endDate,
-              },
+      ],
+      include: [
+        {
+          model: leaveRequestRepos,
+          as: "leaveRequests",
+          attributes: [],
+          required: false,
+          where: {
+            status: "approved",
+            start_date: {
+              [Op.gte]: startDate,
+              [Op.lt]: endDate,
             },
           },
-        ],
-        group: ["Employee.id"],
-        order: [[db.sequelize.literal("total_leave"), "DESC"]],
-        raw: false,
-      });
+        },
+      ],
+      group: ["Employee.id"],
+      order: [[db.sequelize.literal("total_leave"), "DESC"]],
+      raw: false,
+    });
 
-      if (results.length === 0) {
-        console.log(`No employees found for company ${company.company_name}. Skipping email.`);
-        continue;
-      }
+    const html = buildHtmlReport(results, range);
+    const subject = `Approved Leave Summary – ${monthName} ${prevYear}`;
 
-      const templateRange = {
-        monthName: monthName,
-        prevYear: year,
-      };
+    const to = process.env.LEAVE_REPORT_TO || "hr@yourcompany.com";
 
-      const html = buildHtmlReport(results, templateRange);
-      const subject = `Approved Leave Summary – ${monthName} ${year}`;
+    await sendEmail({
+      to,
+      subject,
+      html,
+    });
 
-      const to = process.env.LEAVE_REPORT_TO || "hr@yourcompany.com";
-
-      await sendEmail({
-        to,
-        subject,
-        html,
-      });
-
-      console.log(`Leave report email sent successfully for ${company.company_name}.`);
-    }
-
-    console.log("All leave reports processed.");
-    process.exit(0);
+    console.log("Leave report email sent successfully.");
   } catch (err) {
     console.error("Error generating approved leave summary:", err);
     process.exit(1);

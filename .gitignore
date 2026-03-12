@@ -1,2 +1,4 @@
 logs/leaveGenerate.log
 logs/
+*.env
+*.sql
