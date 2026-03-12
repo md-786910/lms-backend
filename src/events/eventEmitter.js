@@ -109,11 +109,23 @@ eventEmitter.on(eventObj.APPROVED_LEAVE, async (data) => {
             </tr>
             <tr>
               <td style="font-weight: bold;">Start Date:</td>
-              <td>${new Date(leave?.start_date).toLocaleDateString()}</td>
+              <td>
+                ${new Date(leave?.start_date).toLocaleDateString('en-GB', {
+                  day: '2-digit',
+                  month: 'long',
+                  year: 'numeric'
+                })}
+              </td>
             </tr>
             <tr>
               <td style="font-weight: bold;">End Date:</td>
-              <td>${new Date(leave?.end_date).toLocaleDateString()}</td>
+              <td>
+                ${new Date(leave?.end_date).toLocaleDateString('en-GB', {
+                  day: '2-digit',
+                  month: 'long',
+                  year: 'numeric'
+                })}
+              </td>
             </tr>
             <tr>
               <td style="font-weight: bold;">Total Days:</td>
@@ -183,11 +195,23 @@ eventEmitter.on(eventObj.REJECTED_LEAVE, async (data) => {
                  style="background: #fdf8f8; border-radius: 6px; margin: 20px 0; font-size: 14px; border: 1px solid #e0e0e0;">
             <tr>
               <td style="font-weight: bold; width: 120px;">Start Date:</td>
-              <td>${new Date(leave?.start_date).toLocaleDateString()}</td>
+              <td>
+                ${new Date(leave?.start_date).toLocaleDateString('en-GB', {
+                  day: '2-digit',
+                  month: 'long',
+                  year: 'numeric'
+                })}
+              </td>
             </tr>
             <tr>
               <td style="font-weight: bold;">End Date:</td>
-              <td>${new Date(leave?.end_date).toLocaleDateString()}</td>
+              <td>
+                ${new Date(leave?.end_date).toLocaleDateString('en-GB', {
+                  day: '2-digit',
+                  month: 'long',
+                  year: 'numeric'
+                })}
+              </td>
             </tr>
             <tr>
               <td style="font-weight: bold;">Total Days:</td>
