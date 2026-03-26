@@ -77,20 +77,9 @@
       /* Summary Section */
       .summary-section {
         display: flex;
-        flex-direction: row;
         align-items: center;
         padding: 10px 32px;
         gap: 32px;
-      }
-
-      .logo-container {
-        flex: 0 0 auto;
-      }
-
-      .logo {
-        height: 60px;
-        width: auto;
-        object-fit: contain;
       }
 
       .summary-details {
@@ -110,6 +99,8 @@
 
       .breakdown {
         display: flex;
+        justify-content: center;
+        align-items: center;
         gap: 34px;
       }
 
@@ -132,12 +123,6 @@
       .breakdown-amount {
         font-size: 18px;
         font-weight: 600;
-      }
-
-      /* Company Info */
-      .company-info {
-        padding: 16px 24px 15px;
-        border-bottom: 1px solid #e5e5e5;
       }
 
       .company-name {
@@ -190,12 +175,6 @@
         gap: 12px;
       }
 
-      .employee-right-column {
-        display: flex;
-        justify-content: center;
-        align-items: flex-start;
-      }
-
       .info-row {
         display: grid;
         grid-template-columns: 160px 1fr;
@@ -220,20 +199,13 @@
         border-radius: 8px;
         padding: 16px 20px;
         text-align: center;
-        width: 220px;
-        min-width: 200px;
+        width: 50%;
       }
 
       .net-pay-label {
         font-size: 14px;
         color: #065f46;
         margin-bottom: 4px;
-      }
-
-      .net-pay-amount {
-        font-size: 28px;
-        font-weight: 700;
-        color: #047857;
       }
 
       .pay-details {
@@ -323,52 +295,6 @@
         font-style: italic;
       }
 
-      /* Print Styles */
-      @media print {
-        body {
-          background: white;
-          padding: 0;
-        }
-
-        .container {
-          box-shadow: none;
-          border-radius: 0;
-          max-width: none;
-        }
-
-        .header-actions {
-          display: none;
-        }
-      }
-
-      /* Responsive */
-      @media (max-width: 768px) {
-        .summary-section {
-          flex-direction: column;
-          text-align: center;
-          gap: 16px;
-        }
-
-        .breakdown {
-          justify-content: center;
-        }
-
-        .earnings-deductions {
-          grid-template-columns: 1fr;
-          gap: 16px;
-        }
-
-        .employee-info-grid {
-          flex-direction: column;
-          gap: 16px;
-        }
-
-        .net-pay-highlight {
-          width: 100%;
-          min-width: auto;
-        }
-      }
-
       /* ------------------------------------- */
       /* Base Styles */
         * {
@@ -415,34 +341,24 @@
 
         /* Header */
         .header {
-            display: grid;
-            grid-template-columns: 1fr 3fr; /* small | large */
+            /* display: grid;
+            grid-template-columns: 1fr 2fr; small | large */
+            display: flex;
+            justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
             padding-bottom: 15px;
             border-bottom: 2px solid #f3f4f6;
         }
 
-        .company-details h1 {
-            font-size: 20px;
-            color: #111827;
-            margin-bottom: 2px;
-        }
-
-        .company-details p {
-            font-size: 11px;
-            color: #6b7280;
-            max-width: 400px;
-        }
-
         .logo {
-            height: 45px;
+            height: 60px;
             width: auto;
         }
 
         /* Title */
         .document-title {
-            margin-bottom: 20px;
+            margin-bottom: 30px;
         }
 
         .document-title h2 {
@@ -459,7 +375,7 @@
         .info-section {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 30px;
+            gap: 20px;
             margin-bottom: 20px;
         }
 
@@ -467,13 +383,24 @@
             display: flex;
             flex-direction: column;
             gap: 6px;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
         }
 
         .info-item {
             display: flex;
+            align-items: center;
             justify-content: space-between;
             border-bottom: 1px solid #f3f4f6;
+            padding-left: 6px;
+            padding-right: 6px;
             padding-bottom: 3px;
+            padding-top: 3px;
+            margin-top: 4px;
+            margin-bottom: 4px;
+        }
+        .info-item:last-child {
+            border-bottom: none;
         }
 
         .info-label {
@@ -505,6 +432,7 @@
         /* Tables */
         .salary-table-container {
             display: flex;
+            gap: 20px;
             border: 1px solid #e5e7eb;
             border-radius: 6px;
             overflow: hidden;
@@ -515,7 +443,7 @@
             flex: 1;
         }
 
-        .salary-column:first-child {
+        .salary-column {
             border-right: 1px solid #e5e7eb;
         }
 
@@ -571,6 +499,9 @@
         .net-pay-amount {
             font-size: 20px;
             font-weight: 700;
+            font-size: 28px;
+            color: #047857;
+            margin-bottom: 5px;
         }
 
         .amount-in-words {
@@ -594,21 +525,6 @@
             color: #9ca3af;
             letter-spacing: 0.1em;
         }
-
-        /* Print adjustments */
-        @media print {
-            body { 
-                background: none;
-                padding: 0;
-            }
-            .page {
-                margin: 0;
-                border: none;
-                box-shadow: none;
-                width: 100%;
-                height: 100%;
-            }
-        }
       /* --------------------------------------- */
     </style>
   </head>
@@ -616,43 +532,31 @@
     <div class="page">
       <!-- header -->
       <div class="header">
+        <!-- Company Info -->
         <% if (logo) { %>
-          <img src="data:image/png;base64,<%= logo %>" alt="Logo" class="logo" />
+           <img src="data:image/png;base64,<%= logo %>" alt="Logo" class="logo" />
         <% } %>
-        <div class="employee-right-column">
-          <div class="net-pay-highlight">
+        <div class="net-pay-highlight">
             <div class="net-pay-label">Employee Net Pay</div>
             <div class="net-pay-amount" id="net-pay-amount">
               <%= salary.net_salary %>
             </div>
-            <div class="pay-details" id="pay-details">
-              <div class="breakdown">
-                <div class="breakdown-item">
-                  <div class="breakdown-label deductions deductions-color">Deductions</div>
-                  <div class="breakdown-amount deductions deductions-color" id="deductions-amount">
-                    <%= salary?.deduction %>
-                  </div>
+            <div class="breakdown">
+              <div class="breakdown-item">
+                <div class="breakdown-label deductions deductions-color">Deductions</div>
+                <div class="breakdown-amount deductions deductions-color" id="deductions-amount">
+                  <%= salary?.deduction %>
                 </div>
-                <div class="breakdown-item">
-                  <div class="breakdown-label gross-pay">Gross Pay</div>
-                  <div class="breakdown-amount gross-pay" id="gross-pay-amount">
-                    <%= salary?.salary %>
-                  </div>
+              </div>
+              <div class="breakdown-item">
+                <div class="breakdown-label gross-pay">Gross Pay</div>
+                <div class="breakdown-amount gross-pay" id="gross-pay-amount">
+                  <%= salary?.salary %>
                 </div>
               </div>
             </div>
-          </div>
         </div>
       </div>
-
-      <!-- Company Info -->
-      <div class="company-info">
-        <div class="company-details">
-            <h1><%= company.company_name %></h1>
-            <p><%= company.address %></p>
-        </div>
-      </div>
-
       <!-- Document Title -->
       <div class="document-title">
           <h2 class="uppercase tracking-wider">Payslip for the month of <%= pay_period %></h2>
@@ -755,11 +659,9 @@
         </div>
 
         <!-- Net Pay Summary -->
-        <div class="summary-section">
-            <div class="net-pay-box">
-                <span class="net-pay-label uppercase">Net Payable</span>
-                <span class="net-pay-amount"><%= salary?.net_salary %></span>
-            </div>
+        <div class="net-pay-box">
+            <span class="net-pay-label uppercase">Net Payable</span>
+            <span class="net-pay-amount"><%= salary?.net_salary %></span>
         </div>
         <div class="amount-in-words">
           Amount in words: <span class="font-semibold"><%= amount_in_inr %></span>
