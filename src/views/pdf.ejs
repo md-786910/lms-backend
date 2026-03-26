@@ -4,21 +4,8 @@
     <meta charset="utf-8" />
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Payslip PDF Generator</title>
+    <title>Salary Slip - <%= employee?.first_name %> <%= employee?.last_name %></title>
     <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-
-      body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-          sans-serif;
-        background-color: #f8f9fa;
-        padding: 20px;
-        color: #333;
-      }
 
       .container {
         max-width: 1000px;
@@ -28,13 +15,6 @@
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         overflow: hidden;
         padding: 18px;
-      }
-
-      /* Header Section */
-      .header {
-        background: white;
-        padding: 10px 24px;
-        border-bottom: 1px solid #e5e5e5;
       }
 
       .nav-tabs {
@@ -97,6 +77,7 @@
       /* Summary Section */
       .summary-section {
         display: flex;
+        flex-direction: row;
         align-items: center;
         padding: 10px 32px;
         gap: 32px;
@@ -387,38 +368,277 @@
           min-width: auto;
         }
       }
+
+      /* ------------------------------------- */
+      /* Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: #1f2937;
+            line-height: 1.4;
+            background-color: #ffffff;
+            font-size: 11px;
+            padding: 0;
+            margin: 0;
+            -webkit-print-color-adjust: exact;
+        }
+
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 15mm;
+            margin: 0 auto;
+            background: white;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Utility */
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .font-bold { font-weight: 700; }
+        .font-semibold { font-weight: 600; }
+        .text-gray-500 { color: #6b7280; }
+        .text-gray-700 { color: #374151; }
+        .uppercase { text-transform: uppercase; }
+        .tracking-wider { letter-spacing: 0.05em; }
+
+        /* Header */
+        .header {
+            display: grid;
+            grid-template-columns: 1fr 3fr; /* small | large */
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f3f4f6;
+        }
+
+        .company-details h1 {
+            font-size: 20px;
+            color: #111827;
+            margin-bottom: 2px;
+        }
+
+        .company-details p {
+            font-size: 11px;
+            color: #6b7280;
+            max-width: 400px;
+        }
+
+        .logo {
+            height: 45px;
+            width: auto;
+        }
+
+        /* Title */
+        .document-title {
+            margin-bottom: 20px;
+        }
+
+        .document-title h2 {
+            font-size: 14px;
+            text-align: center;
+            padding: 6px;
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            color: #374151;
+        }
+
+        /* Employee Info Grid */
+        .info-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 20px;
+        }
+
+        .info-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid #f3f4f6;
+            padding-bottom: 3px;
+        }
+
+        .info-label {
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        .info-value {
+            color: #111827;
+            font-weight: 600;
+        }
+
+        /* Attendance Summary */
+        .attendance-summary {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            font-size: 10px;
+            color: #6b7280;
+        }
+
+        .attendance-item {
+            background: #f9fafb;
+            padding: 4px 10px;
+            border-radius: 4px;
+            border: 1px solid #e5e7eb;
+        }
+
+        /* Tables */
+        .salary-table-container {
+            display: flex;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .salary-column {
+            flex: 1;
+        }
+
+        .salary-column:first-child {
+            border-right: 1px solid #e5e7eb;
+        }
+
+        .table-header {
+            background-color: #f9fafb;
+            padding: 8px 12px;
+            border-bottom: 1px solid #e5e7eb;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 10px;
+            letter-spacing: 0.05em;
+            color: #374151;
+        }
+
+        .table-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 12px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .table-row:last-child {
+            border-bottom: none;
+        }
+
+        .total-row {
+            background-color: #f9fafb;
+            font-weight: 700;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        /* Summary Section */
+        .summary-section {
+            margin-bottom: 20px;
+        }
+
+        .net-pay-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #111827;
+            color: #ffffff;
+            padding: 15px 20px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+
+        .net-pay-label {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .net-pay-amount {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .amount-in-words {
+            font-size: 11px;
+            color: #4b5563;
+            font-style: italic;
+            text-align: right;
+            padding-right: 5px;
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: auto;
+            padding-top: 20px;
+            text-align: center;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .footer p {
+            font-size: 9px;
+            color: #9ca3af;
+            letter-spacing: 0.1em;
+        }
+
+        /* Print adjustments */
+        @media print {
+            body { 
+                background: none;
+                padding: 0;
+            }
+            .page {
+                margin: 0;
+                border: none;
+                box-shadow: none;
+                width: 100%;
+                height: 100%;
+            }
+        }
+      /* --------------------------------------- */
     </style>
   </head>
   <body>
-    <div class="container" id="payslip-container">
-      <!-- Summary Section -->
-      <div class="summary-section">
-        <div class="logo-container">
-          <img
-            src="data:image/png;base64,<%= logo %>"
-            alt="Logo"
-            class="logo"
-          />
-        </div>
-
-        <div class="summary-details">
-          <div class="take-home">
-            <div class="take-home-amount" id="take-home-amount">
+    <div class="page">
+      <!-- header -->
+      <div class="header">
+        <% if (logo) { %>
+          <img src="data:image/png;base64,<%= logo %>" alt="Logo" class="logo" />
+        <% } %>
+        <div class="employee-right-column">
+          <div class="net-pay-highlight">
+            <div class="net-pay-label">Employee Net Pay</div>
+            <div class="net-pay-amount" id="net-pay-amount">
               <%= salary.net_salary %>
             </div>
-          </div>
-
-          <div class="breakdown">
-            <div class="breakdown-item">
-              <div class="breakdown-label deductions deductions-color">Deductions</div>
-              <div class="breakdown-amount deductions deductions-color" id="deductions-amount">
-                <%= salary?.deduction %>
-              </div>
-            </div>
-            <div class="breakdown-item">
-              <div class="breakdown-label gross-pay">Gross Pay</div>
-              <div class="breakdown-amount gross-pay" id="gross-pay-amount">
-                <%= salary?.salary %>
+            <div class="pay-details" id="pay-details">
+              <div class="breakdown">
+                <div class="breakdown-item">
+                  <div class="breakdown-label deductions deductions-color">Deductions</div>
+                  <div class="breakdown-amount deductions deductions-color" id="deductions-amount">
+                    <%= salary?.deduction %>
+                  </div>
+                </div>
+                <div class="breakdown-item">
+                  <div class="breakdown-label gross-pay">Gross Pay</div>
+                  <div class="breakdown-amount gross-pay" id="gross-pay-amount">
+                    <%= salary?.salary %>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -427,158 +647,128 @@
 
       <!-- Company Info -->
       <div class="company-info">
-        <div class="company-name" id="company-name">
-          <%= company.company_name %>
-        </div>
-        <div class="company-address" id="company-address">
-          <%= company.address %>
+        <div class="company-details">
+            <h1><%= company.company_name %></h1>
+            <p><%= company.address %></p>
         </div>
       </div>
 
-      <!-- Payslip Details -->
-      <div class="payslip-details">
-        <div class="payslip-title" id="payslip-title">
-          Payslip for the month of <%= pay_period %>
-        </div>
-
-        <div class="employee-summary">
-          <div class="section-title">Employee Pay Summary</div>
-          <div class="employee-info-grid">
-            <div>
-              <div class="employee-left-column">
-                <div class="info-row">
-                  <span class="info-label">Employee Name</span>
-                  <span class="info-value" id="employee-name">
-                    <%= employee?.first_name %> <%= employee?.last_name %>
-                  </span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">Designation</span>
-                  <span class="info-value" id="designation">
-                    <%= employee?.designation?.title %>
-                  </span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">Pay Period</span>
-                  <span class="info-value" id="pay-period">
-                    <%= pay_period %>
-                  </span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">PF A/C Number</span>
-                  <span class="info-value" id="pf-number">
-                    <%= employee?.EmployeePersonalInformation?.epf_no %>
-                  </span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">Employee Net Pay</span>
-                  <span class="info-value" id="employee-net-pay-label">
-                    <%= salary?.net_salary %>
-                  </span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">Date of Joining</span>
-                  <span class="info-value" id="joining-date">
-                    <%= new Date(employee?.date_of_joining).toLocaleDateString() %>
-                  </span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">Pay Date</span>
-                  <span class="info-value" id="pay-date">
-                    <%= pay_date %>
-                  </span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">ESI Number</span>
-                  <span class="info-value" id="esi-number">
-                    <%= employee?.EmployeePersonalInformation?.esic_no %>
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div class="employee-right-column">
-              <div class="net-pay-highlight">
-                <div class="net-pay-label">Employee Net Pay</div>
-                <div class="net-pay-amount" id="net-pay-amount">
-                  <%= salary?.net_salary %>
-                </div>
-                <div class="pay-details" id="pay-details">
-                  Paid Days : <%= month_days %> | LOP Days : <%= total_leave %>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Earnings and Deductions -->
-        <div class="earnings-deductions">
-          <div class="table-container">
-            <div class="table-content">
-              <div class="table-header table-row">
-                <div class="table-cell" style="font-weight: 600">Earnings</div>
-                <div class="table-cell amount" style="font-weight: 600">Amount</div>
-              </div>
-              <div class="table-row">
-                <div class="table-cell">Basic</div>
-                <div class="table-cell amount"><%= salary?.base_salary %></div>
-              </div>
-              <div class="table-row">
-                <div class="table-cell">House Rent Allowance</div>
-                <div class="table-cell amount">
-                  <%= employee?.employee_salary?.hra %>
-                </div>
-              </div>
-              <div class="table-row total">
-                <div class="table-cell">Gross Earnings</div>
-                <div class="table-cell amount" id="gross-earnings">
-                  <%=salary?.salary %>
-                </div>
-                <div class="table-cell amount"></div>
-              </div>
-            </div>
-          </div>
-
-          <div class="table-container">
-            <div class="table-content">
-              <div class="table-header table-row">
-                <div class="table-cell" style="font-weight: 600">Deductions</div>
-                <div class="table-cell amount" style="font-weight: 600">Amount</div>
-                <div class="table-cell amount" style="font-weight: 600">YTD</div>
-              </div>
-              <div class="table-row">
-                <div class="table-cell">EPF Contribution</div>
-                <div class="table-cell amount"><%= total_epf %></div>
-                <div class="table-cell amount"><%= epfYTD %></div>
-              </div>
-              <div class="table-row total">
-                <div class="table-cell">Total Deductions</div>
-                <div class="table-cell amount" id="total-deductions">
-                  <%= total_epf %>
-                </div>
-                <div class="table-cell amount"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Final Total -->
-        <div class="final-total">
-          <div class="final-total-text">
-            Total Net Payable
-            <span class="final-amount" id="final-net-pay">
-              <%= salary?.net_salary %>
-            </span>
-            <div class="amount-words"><%= amount_in_inr %></div>
-          </div>
-        </div>
+      <!-- Document Title -->
+      <div class="document-title">
+          <h2 class="uppercase tracking-wider">Payslip for the month of <%= pay_period %></h2>
       </div>
-      <div style="text-align: center; margin-top: 5px;">
-        <p>
-          ********** THIS IS A COMPUTER GENERATED PAYSLIP, NOT REQUIRING
-          SIGNATURE **********
-        </p>
-      </div>
+
+      <!-- Employee Info Section -->
+        <div class="info-section">
+            <div class="info-group">
+                <div class="info-item">
+                    <span class="info-label">Employee Name</span>
+                    <span class="info-value"><%= employee?.first_name %> <%= employee?.last_name %></span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Designation</span>
+                    <span class="info-value"><%= employee?.designation?.title %></span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Employee ID</span>
+                    <span class="info-value"><%= employee?.employee_id || 'N/A' %></span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Date of Joining</span>
+                    <span class="info-value"><%= new Date(employee?.date_of_joining).toLocaleDateString() %></span>
+                </div>
+            </div>
+            <div class="info-group">
+                <div class="info-item">
+                    <span class="info-label">PF A/C Number</span>
+                    <span class="info-value"><%= employee?.EmployeePersonalInformation?.epf_no || 'N/A' %></span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">ESI Number</span>
+                    <span class="info-value"><%= employee?.EmployeePersonalInformation?.esic_no || 'N/A' %></span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Pay Date</span>
+                    <span class="info-value"><%= pay_date %></span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Payment Mode</span>
+                    <span class="info-value">Bank Transfer</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Attendance Summary -->
+        <div class="attendance-summary">
+            <div class="attendance-item">
+                <span class="font-semibold">Paid Days:</span> <%= month_days %>
+            </div>
+            <div class="attendance-item">
+                <span class="font-semibold">LOP Days:</span> <%= total_leave %>
+            </div>
+        </div>
+        <div style="height: 20px;"></div>
+
+        <!-- Salary Breakdown Table -->
+        <div class="salary-table-container">
+            <!-- Earnings -->
+            <div class="salary-column">
+                <div class="table-header">Earnings</div>
+                <div class="table-row">
+                    <span>Basic Salary</span>
+                    <span class="font-semibold"><%= salary?.base_salary %></span>
+                </div>
+                <div class="table-row">
+                    <span>HRA</span>
+                    <span class="font-semibold"><%= employee?.employee_salary?.hra || '0.00' %></span>
+                </div>
+                <!-- Fill empty rows to align with deductions if needed -->
+                <div class="table-row total-row">
+                    <span>Gross Earnings</span>
+                    <span><%= salary?.salary %></span>
+                </div>
+            </div>
+
+            <!-- Deductions -->
+            <div class="salary-column">
+                <div class="table-header">Deductions</div>
+                <div class="table-row">
+                    <span>EPF Contribution</span>
+                    <span class="font-semibold"><%= total_epf %></span>
+                </div>
+                <% if (salary?.deduction && parseFloat(salary.deduction) > parseFloat(total_epf)) { %>
+                <div class="table-row">
+                    <span>Other Deductions</span>
+                    <span class="font-semibold"><%= (parseFloat(salary.deduction) - parseFloat(total_epf)).toFixed(2) %></span>
+                </div>
+                <% } else { %>
+                <div class="table-row" style="color: transparent;">
+                    <span>-</span>
+                    <span>-</span>
+                </div>
+                <% } %>
+                <div class="table-row total-row">
+                    <span>Total Deductions</span>
+                    <span><%= salary?.deduction || total_epf %></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Net Pay Summary -->
+        <div class="summary-section">
+            <div class="net-pay-box">
+                <span class="net-pay-label uppercase">Net Payable</span>
+                <span class="net-pay-amount"><%= salary?.net_salary %></span>
+            </div>
+        </div>
+        <div class="amount-in-words">
+          Amount in words: <span class="font-semibold"><%= amount_in_inr %></span>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>********** THIS IS A COMPUTER GENERATED PAYSLIP, NO SIGNATURE REQUIRED **********</p>
+        </div>
     </div>
   </body>
 </html>
