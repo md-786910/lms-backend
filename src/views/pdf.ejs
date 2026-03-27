@@ -185,7 +185,7 @@
       .salary-table-container {
         display: flex;
         gap: 20px;
-        border: 1px solid #e5e7eb;
+        /* border: 1px solid #e5e7eb; */
         border-radius: 6px;
         overflow: hidden;
         margin-bottom: 20px;
@@ -193,12 +193,13 @@
 
       .salary-column {
         flex: 1;
-        border-right: 1px solid #e5e7eb;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
       }
 
-      .salary-column:last-child {
+      /* .salary-column:last-child {
         border-right: none;
-      }
+      } */
 
       .table-header {
         background-color: #f9fafb;
@@ -209,6 +210,23 @@
         font-size: 10px;
         letter-spacing: 0.05em;
         color: #374151;
+      }
+
+      .table-header.deductions-header {
+        background-color: #feebeb;
+      }
+
+      .deductions-column {
+        background-color: #feebeb;
+      }
+
+      .deductions-column .table-row {
+        border-bottom-color: #feebeb;
+      }
+
+      .deductions-column .total-row {
+        background-color: #feebeb;
+        /* color: #b91c1c; */
       }
 
       .table-row {
@@ -369,8 +387,8 @@
             </div>
 
             <!-- Deductions -->
-            <div class="salary-column">
-                <div class="table-header">Deductions</div>
+            <div class="salary-column deductions-column">
+                <div class="table-header deductions-header">Deductions</div>
                 <div class="table-row">
                     <span>EPF Contribution</span>
                     <span class="font-semibold"><%= total_epf %></span>
