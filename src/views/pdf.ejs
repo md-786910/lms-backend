@@ -94,9 +94,9 @@
       }
 
       .breakdown-label {
-        font-size: 12px;
+        font-size: 14px;
         margin-bottom: 4px;
-        text-transform: uppercase;
+        font-weight: 600;
         letter-spacing: 0.5px;
       }
 
@@ -127,42 +127,38 @@
       /* Employee Info Section */
       .info-section {
         display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 20px;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
         margin-bottom: 20px;
-      }
-
-      .info-group {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        border: 1px solid #e5e7eb;
-        border-radius: 4px;
+        background-color: #f9fafb;
+        border: 1px solid #f9fafb;
+        border-radius: 8px;
+        padding: 15px;
       }
 
       .info-item {
         display: flex;
-        align-items: center;
-        justify-content: space-between;
-        border-bottom: 1px solid #f3f4f6;
-        padding: 4px 6px;
-        margin: 4px 0;
-      }
-
-      .info-item:last-child {
-        border-bottom: none;
+        flex-direction: column;
+        gap: 4px;
       }
 
       .info-label {
         font-size: 14px;
-        color: #6b7280;
-        font-weight: 500;
+        color: #030303;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+      }
+      .info-labels {
+        font-size: 12px;
+        color: #030303;
+        font-weight: 600;
+        letter-spacing: 0.05em;
       }
 
       .info-value {
-        font-size: 14px;
-        font-weight: 600;
-        color: #111827;
+        font-size: 16px;
+        font-weight: 400;
+        color: #030303;
       }
 
       /* Attendance Summary */
@@ -205,9 +201,8 @@
         background-color: #f9fafb;
         padding: 8px 12px;
         border-bottom: 1px solid #e5e7eb;
-        font-weight: 700;
-        text-transform: uppercase;
-        font-size: 10px;
+        font-weight: 600;
+        font-size: 14px;
         letter-spacing: 0.05em;
         color: #374151;
       }
@@ -317,41 +312,37 @@
 
       <!-- Employee Info Section -->
         <div class="info-section">
-            <div class="info-group">
-                <div class="info-item">
-                    <span class="info-label">Employee Name</span>
-                    <span class="info-value"><%= employee?.first_name %> <%= employee?.last_name %></span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Designation</span>
-                    <span class="info-value"><%= employee?.designation?.title %></span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Employee ID</span>
-                    <span class="info-value"><%= employee?.employee_id || 'N/A' %></span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Date of Joining</span>
-                    <span class="info-value"><%= new Date(employee?.date_of_joining).toLocaleDateString() %></span>
-                </div>
+            <div class="info-item">
+                <span class="info-label">Employee Name</span>
+                <span class="info-value"><%= employee?.first_name %> <%= employee?.last_name %></span>
             </div>
-            <div class="info-group">
-                <div class="info-item">
-                    <span class="info-label">PF A/C Number</span>
-                    <span class="info-value"><%= employee?.EmployeePersonalInformation?.epf_no || 'N/A' %></span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">ESI Number</span>
-                    <span class="info-value"><%= employee?.EmployeePersonalInformation?.esic_no || 'N/A' %></span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Pay Date</span>
-                    <span class="info-value"><%= pay_date %></span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Payment Mode</span>
-                    <span class="info-value">Bank Transfer</span>
-                </div>
+            <div class="info-item">
+                <span class="info-label">Designation</span>
+                <span class="info-value"><%= employee?.designation?.title %></span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Employee ID</span>
+                <span class="info-value"><%= employee?.employee_id || 'N/A' %></span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Date of Joining</span>
+                <span class="info-value"><%= new Date(employee?.date_of_joining).toLocaleDateString() %></span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">PF A/C Number</span>
+                <span class="info-value"><%= employee?.EmployeePersonalInformation?.epf_no || 'N/A' %></span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">ESI Number</span>
+                <span class="info-value"><%= employee?.EmployeePersonalInformation?.esic_no || 'N/A' %></span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Pay Date</span>
+                <span class="info-value"><%= pay_date %></span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Payment Mode</span>
+                <span class="info-value">Bank Transfer</span>
             </div>
         </div>
 
@@ -372,17 +363,17 @@
             <div class="salary-column">
                 <div class="table-header">Earnings</div>
                 <div class="table-row">
-                    <span>Basic Salary</span>
-                    <span class="font-semibold"><%= salary?.base_salary %></span>
+                    <span class="info-labels">Basic Salary</span>
+                    <span class="font-semibold info-labels"><%= salary?.base_salary %></span>
                 </div>
                 <div class="table-row">
-                    <span>HRA</span>
-                    <span class="font-semibold"><%= employee?.employee_salary?.hra || '0.00' %></span>
+                    <span class="info-labels">HRA</span>
+                    <span class="font-semibold info-labels"><%= employee?.employee_salary?.hra || '0.00' %></span>
                 </div>
                 <!-- Fill empty rows to align with deductions if needed -->
                 <div class="table-row total-row">
-                    <span>Gross Earnings</span>
-                    <span><%= salary?.salary %></span>
+                    <span class="info-labels">Gross Earnings</span>
+                    <span class="info-labels"><%= salary?.salary %></span>
                 </div>
             </div>
 
@@ -390,13 +381,13 @@
             <div class="salary-column deductions-column">
                 <div class="table-header deductions-header">Deductions</div>
                 <div class="table-row">
-                    <span>EPF Contribution</span>
-                    <span class="font-semibold"><%= total_epf %></span>
+                    <span class="info-labels">EPF Contribution</span>
+                    <span class="font-semibold info-labels"><%= total_epf %></span>
                 </div>
                 <% if (salary?.deduction && parseFloat(salary.deduction) > parseFloat(total_epf)) { %>
                 <div class="table-row">
-                    <span>Other Deductions</span>
-                    <span class="font-semibold"><%= (parseFloat(salary.deduction) - parseFloat(total_epf)).toFixed(2) %></span>
+                    <span class="info-labels">Other Deductions</span>
+                    <span class="font-semibold info-labels"><%= (parseFloat(salary.deduction) - parseFloat(total_epf)).toFixed(2) %></span>
                 </div>
                 <% } else { %>
                 <div class="table-row" style="color: transparent;">
@@ -405,8 +396,8 @@
                 </div>
                 <% } %>
                 <div class="table-row total-row">
-                    <span>Total Deductions</span>
-                    <span><%= salary?.deduction || total_epf %></span>
+                    <span class="info-labels">Total Deductions</span>
+                    <span class="info-labels"><%= salary?.deduction || total_epf %></span>
                 </div>
             </div>
         </div>
