@@ -32,7 +32,7 @@ async function generateApprovedLeaveSummary() {
     const results = await employeeRepos.findAll({
       where: {
         is_active: true,
-        company_id: 2,
+        company_id: 2, // leanport company
       },
       attributes: [
         "id",
@@ -44,9 +44,9 @@ async function generateApprovedLeaveSummary() {
             "COALESCE",
             db.sequelize.fn(
               "SUM",
-              db.sequelize.col("leaveRequests.total_days")
+              db.sequelize.col("leaveRequests.total_days"),
             ),
-            0
+            0,
           ),
           "total_leave",
         ],
