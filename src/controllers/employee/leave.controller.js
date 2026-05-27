@@ -16,13 +16,10 @@ const getAllLeave = catchAsync(async (req, res, next) => {
   const leaves = await employeLeaveRepos.findAll({
     where: { employee_id: id, company_id },
   });
-  let total_approved = await leaveRequestRepos.findAll({
-    where: {
-      company_id,
-      employee_id: id,
-      status: "approved",
-    },
-  });
+  const total_approved = leaves?.reduce((sum, leave) => {
+    return sum + Number(leave?.leave_used || 0);
+  }, 0);
+
   let total_pending = await leaveRequestRepos.findAll({
     where: {
       company_id,
@@ -36,12 +33,8 @@ const getAllLeave = catchAsync(async (req, res, next) => {
     return sum + leave?.leave_remaing;
   }, 0);
 
-  total_approved = total_approved?.reduce((sum, leave) => {
-    return sum + leave?.total_days;
-  }, 0);
-
   total_pending = total_pending?.reduce((sum, leave) => {
-    return sum + leave?.total_days;
+    return sum + Number(leave?.total_days || 0);
   }, 0);
 
   res.status(200).json({
