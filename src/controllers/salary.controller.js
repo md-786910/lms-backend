@@ -11,7 +11,7 @@ const { STATUS_CODE } = require("../constants/statusCode");
 const db = require("../models");
 const dayjs = require("dayjs");
 const {
-  findAnnualLeaveForEmployee,
+  findDeductibleLeavesForEmployee,
   getLeavePolicyForEmployee,
 } = require("../services/leavePolicy.service");
 
@@ -26,33 +26,36 @@ const getUnpaidLeaveDeduction = async ({
   payable_salary,
   transaction,
 }) => {
-  const annualLeave = await findAnnualLeaveForEmployee({
+  const deductibleLeaves = await findDeductibleLeavesForEmployee({
     company_id,
     employee_id,
     transaction,
   });
 
-  if (!annualLeave) {
+  if (!deductibleLeaves?.length) {
     return {
       unpaidLeaveDays: 0,
       unpaidLeaveDeduction: 0,
     };
   }
 
-  const policy = await getLeavePolicyForEmployee({
-    company_id,
-    employee_id,
-    leave_type_id: annualLeave.leave_id,
-    date: new Date(year, month_in_digit - 1, 1),
-    transaction,
-  });
+  let unpaidLeaveDays = 0;
+  for (const leave of deductibleLeaves) {
+    const policy = await getLeavePolicyForEmployee({
+      company_id,
+      employee_id,
+      leave_type_id: leave.leave_id,
+      date: new Date(year, month_in_digit - 1, 1),
+      transaction,
+    });
+    unpaidLeaveDays += Number(policy.unpaidLeave || 0);
+  }
 
   const monthlySalary =
     Number(salary_with_allowance || 0) ||
     Number(base_salary || 0) ||
     Number(payable_salary || 0);
   const dailySalary = monthlySalary / dayjs().daysInMonth();
-  const unpaidLeaveDays = Number(policy.unpaidLeave || 0);
   const unpaidLeaveDeduction = Number((dailySalary * unpaidLeaveDays).toFixed(2));
 
   return {

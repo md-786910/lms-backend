@@ -1,4 +1,5 @@
 const { STATUS_CODE } = require("../constants/statusCode");
+const { getLeavePolicyConfig } = require("../services/leavePolicy.service");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
 const {
@@ -383,10 +384,21 @@ const getLeave = catchAsync(async (req, res, next) => {
     where: { company_id },
     order: [["createdAt", "DESC"]],
   });
+  const normalizedLeaves = leaves.map((leave) => {
+    const plainLeave = leave?.toJSON ? leave.toJSON() : leave;
+    const policyConfig = getLeavePolicyConfig(
+      plainLeave.type,
+      plainLeave.annual_days
+    );
+    return {
+      ...plainLeave,
+      annual_days: policyConfig.annualLeaveDays,
+    };
+  });
   res.status(STATUS_CODE.OK).json({
     status: true,
     message: "Leaves fetched successfully",
-    data: leaves,
+    data: normalizedLeaves,
   });
 });
 
@@ -396,9 +408,10 @@ const createLeave = catchAsync(async (req, res, next) => {
     return next(new AppError("company id not found", STATUS_CODE.NOT_FOUND));
   }
   const { type, annual_days } = req.body;
+  const policyConfig = getLeavePolicyConfig(type, annual_days);
   const leave = await leaveRepos.create({
     type,
-    annual_days,
+    annual_days: policyConfig.annualLeaveDays,
     company_id,
   });
   res.status(STATUS_CODE.OK).json({
@@ -437,6 +450,7 @@ const updateLeave = catchAsync(async (req, res, next) => {
     return next(new AppError("company id not found", STATUS_CODE.NOT_FOUND));
   }
   const { type, annual_days } = req.body;
+  const policyConfig = getLeavePolicyConfig(type, annual_days);
   const leave = await leaveRepos.findOne({
     where: { id, company_id },
   });
@@ -444,7 +458,7 @@ const updateLeave = catchAsync(async (req, res, next) => {
     return next(new AppError("leave not found", STATUS_CODE.NOT_FOUND));
   }
   leave.type = type;
-  leave.annual_days = annual_days;
+  leave.annual_days = policyConfig.annualLeaveDays;
   await leave.save();
   res.status(STATUS_CODE.OK).json({
     status: true,

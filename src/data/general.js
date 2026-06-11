@@ -68,7 +68,7 @@ const designationsData = departmentsData.map((dept, index) => ({
 const leavesData = [
   {
     type: "Sick Leave",
-    annual_days: 10,
+    annual_days: 6,
   },
   {
     type: "Earned Leave",
@@ -76,7 +76,7 @@ const leavesData = [
   },
   {
     type: "Casual Leave",
-    annual_days: 15,
+    annual_days: 12,
   },
 ];
 

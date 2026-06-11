@@ -1,9 +1,19 @@
 const { Op } = require("sequelize");
 const { employeLeaveRepos, leaveRequestRepos } = require("../repository/base");
 
-const ANNUAL_LEAVE_DAYS = 18;
-const CYCLE_LEAVE_DAYS = 9;
-const MONTHLY_ACCRUAL_DAYS = 1.5;
+const TOTAL_ANNUAL_LEAVE_DAYS = 18;
+const LEAVE_POLICY_CONFIG = {
+  casual: {
+    annualLeaveDays: 12,
+    cycleLeaveDays: 6,
+    monthlyAccrualDays: 1,
+  },
+  sick: {
+    annualLeaveDays: 6,
+    cycleLeaveDays: 3,
+    monthlyAccrualDays: 0.5,
+  },
+};
 const CYCLE_MONTH_COUNT = 6;
 
 const roundLeave = (value) => Math.round((Number(value || 0) + Number.EPSILON) * 100) / 100;
@@ -87,10 +97,34 @@ const buildMonthlyLeaveTaken = (leaveRequests, cycle) => {
   return monthlyLeaveTaken;
 };
 
-const calculateLeavePolicy = (leaveRequests, date = new Date()) => {
+const getLeavePolicyConfig = (leaveType, configuredAnnualDays) => {
+  const normalizedType = String(leaveType || "").toLowerCase();
+
+  if (normalizedType.includes("casual")) {
+    return LEAVE_POLICY_CONFIG.casual;
+  }
+
+  if (normalizedType.includes("sick")) {
+    return LEAVE_POLICY_CONFIG.sick;
+  }
+
+  const annualLeaveDays = Number(configuredAnnualDays || 0);
+  return {
+    annualLeaveDays,
+    cycleLeaveDays: roundLeave(annualLeaveDays / 2),
+    monthlyAccrualDays: roundLeave(annualLeaveDays / 12),
+  };
+};
+
+const calculateLeavePolicy = (leaveRequests, date = new Date(), config = {}) => {
   const cycle = getCycleForDate(date);
   const targetMonth = new Date(date).getMonth() + 1;
   const monthlyLeaveTaken = buildMonthlyLeaveTaken(leaveRequests, cycle);
+  const {
+    annualLeaveDays = 0,
+    cycleLeaveDays = 0,
+    monthlyAccrualDays = 0,
+  } = config;
   const months = [];
   let previousBalance = 0;
   let totalLeaveTaken = 0;
@@ -98,7 +132,7 @@ const calculateLeavePolicy = (leaveRequests, date = new Date()) => {
 
   for (let month = cycle.cycleStartMonth; month <= cycle.cycleEndMonth; month += 1) {
     const leaveTaken = roundLeave(monthlyLeaveTaken[month] || 0);
-    const availableBalance = roundLeave(previousBalance + MONTHLY_ACCRUAL_DAYS);
+    const availableBalance = roundLeave(previousBalance + monthlyAccrualDays);
     const unpaidLeave = roundLeave(Math.max(0, leaveTaken - availableBalance));
     const currentBalance = roundLeave(Math.max(0, availableBalance - leaveTaken));
 
@@ -108,7 +142,7 @@ const calculateLeavePolicy = (leaveRequests, date = new Date()) => {
     months.push({
       month,
       previousBalance,
-      accrual: MONTHLY_ACCRUAL_DAYS,
+      accrual: monthlyAccrualDays,
       availableBalance,
       leaveTaken,
       currentBalance,
@@ -119,12 +153,12 @@ const calculateLeavePolicy = (leaveRequests, date = new Date()) => {
   }
 
   const currentMonth = months.find((month) => month.month === targetMonth) || months[0];
-  const cycleExcessUnpaidLeave = roundLeave(Math.max(0, totalLeaveTaken - CYCLE_LEAVE_DAYS));
+  const cycleExcessUnpaidLeave = roundLeave(Math.max(0, totalLeaveTaken - cycleLeaveDays));
 
   return {
-    annualLeaveDays: ANNUAL_LEAVE_DAYS,
-    cycleLeaveDays: CYCLE_LEAVE_DAYS,
-    monthlyAccrualDays: MONTHLY_ACCRUAL_DAYS,
+    annualLeaveDays,
+    cycleLeaveDays,
+    monthlyAccrualDays,
     cycleStartMonth: cycle.cycleStartMonth,
     cycleEndMonth: cycle.cycleEndMonth,
     totalLeaveTaken,
@@ -173,6 +207,18 @@ const getLeavePolicyForEmployee = async ({
   date = new Date(),
   transaction,
 }) => {
+  const employeeLeave = await employeLeaveRepos.findOne({
+    where: {
+      company_id,
+      employee_id,
+      leave_id: leave_type_id,
+    },
+    transaction,
+  });
+  const config = getLeavePolicyConfig(
+    employeeLeave?.leave_type,
+    employeeLeave?.leave_count
+  );
   const leaveRequests = await getApprovedLeaveRequestsForCycle({
     company_id,
     employee_id,
@@ -181,7 +227,7 @@ const getLeavePolicyForEmployee = async ({
     transaction,
   });
 
-  return calculateLeavePolicy(leaveRequests, date);
+  return calculateLeavePolicy(leaveRequests, date, config);
 };
 
 const decorateEmployeeLeaveWithPolicy = async (employeeLeave, options = {}) => {
@@ -196,7 +242,7 @@ const decorateEmployeeLeaveWithPolicy = async (employeeLeave, options = {}) => {
 
   return {
     ...plainLeave,
-    leave_count: ANNUAL_LEAVE_DAYS,
+    leave_count: policy.annualLeaveDays,
     leave_remaing: policy.currentBalance,
     leave_used: policy.totalLeaveTaken,
     unpaid_leave: policy.unpaidLeave,
@@ -222,7 +268,7 @@ const syncEmployeeLeavePolicyBalance = async ({
 
   await employeLeaveRepos.update(
     {
-      leave_count: ANNUAL_LEAVE_DAYS,
+      leave_count: policy.annualLeaveDays,
       leave_remaing: policy.currentBalance,
       leave_used: policy.totalLeaveTaken,
     },
@@ -239,6 +285,21 @@ const syncEmployeeLeavePolicyBalance = async ({
   return policy;
 };
 
+const findDeductibleLeavesForEmployee = async ({ company_id, employee_id, transaction }) => {
+  return employeLeaveRepos.findAll({
+    where: {
+      company_id,
+      employee_id,
+      [Op.or]: [
+        { leave_type: { [Op.iLike]: "%casual%" } },
+        { leave_type: { [Op.iLike]: "%sick%" } },
+      ],
+    },
+    order: [["id", "ASC"]],
+    transaction,
+  });
+};
+
 const findAnnualLeaveForEmployee = async ({ company_id, employee_id, transaction }) => {
   const annualLeave = await employeLeaveRepos.findOne({
     where: {
@@ -246,7 +307,7 @@ const findAnnualLeaveForEmployee = async ({ company_id, employee_id, transaction
       employee_id,
       [Op.or]: [
         { leave_type: { [Op.iLike]: "%annual%" } },
-        { leave_count: ANNUAL_LEAVE_DAYS },
+        { leave_type: { [Op.iLike]: "%casual%" } },
       ],
     },
     order: [["id", "ASC"]],
@@ -266,13 +327,14 @@ const findAnnualLeaveForEmployee = async ({ company_id, employee_id, transaction
 };
 
 module.exports = {
-  ANNUAL_LEAVE_DAYS,
-  CYCLE_LEAVE_DAYS,
-  MONTHLY_ACCRUAL_DAYS,
+  TOTAL_ANNUAL_LEAVE_DAYS,
+  LEAVE_POLICY_CONFIG,
   calculateLeavePolicy,
   decorateEmployeeLeaveWithPolicy,
   findAnnualLeaveForEmployee,
+  findDeductibleLeavesForEmployee,
   getCycleForDate,
+  getLeavePolicyConfig,
   getLeavePolicyForEmployee,
   syncEmployeeLeavePolicyBalance,
 };
