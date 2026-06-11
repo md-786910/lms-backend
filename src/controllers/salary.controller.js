@@ -10,8 +10,56 @@ const AppError = require("../utils/appError");
 const { STATUS_CODE } = require("../constants/statusCode");
 const db = require("../models");
 const dayjs = require("dayjs");
+const {
+  findAnnualLeaveForEmployee,
+  getLeavePolicyForEmployee,
+} = require("../services/leavePolicy.service");
+
 const month_in_digit = dayjs().month() + 1;
 const year = dayjs().year();
+
+const getUnpaidLeaveDeduction = async ({
+  company_id,
+  employee_id,
+  salary_with_allowance,
+  base_salary,
+  payable_salary,
+  transaction,
+}) => {
+  const annualLeave = await findAnnualLeaveForEmployee({
+    company_id,
+    employee_id,
+    transaction,
+  });
+
+  if (!annualLeave) {
+    return {
+      unpaidLeaveDays: 0,
+      unpaidLeaveDeduction: 0,
+    };
+  }
+
+  const policy = await getLeavePolicyForEmployee({
+    company_id,
+    employee_id,
+    leave_type_id: annualLeave.leave_id,
+    date: new Date(year, month_in_digit - 1, 1),
+    transaction,
+  });
+
+  const monthlySalary =
+    Number(salary_with_allowance || 0) ||
+    Number(base_salary || 0) ||
+    Number(payable_salary || 0);
+  const dailySalary = monthlySalary / dayjs().daysInMonth();
+  const unpaidLeaveDays = Number(policy.unpaidLeave || 0);
+  const unpaidLeaveDeduction = Number((dailySalary * unpaidLeaveDays).toFixed(2));
+
+  return {
+    unpaidLeaveDays,
+    unpaidLeaveDeduction,
+  };
+};
 const salaryDashbaord = catchAsync(async (req, res, next) => {
   if (!req.query) {
     return next(new AppError("query not found", STATUS_CODE.NOT_FOUND));
@@ -102,6 +150,17 @@ const importSalartCurrentMonth = catchAsync(async (req, res, next) => {
         base_salary,
         employee_id,
       } = sl;
+      const { unpaidLeaveDeduction } = await getUnpaidLeaveDeduction({
+        company_id,
+        employee_id,
+        salary_with_allowance,
+        base_salary,
+        payable_salary,
+        transaction,
+      });
+      const totalDeduction =
+        Number(total_deduction_allowance || 0) + unpaidLeaveDeduction;
+      const netSalary = Math.max(0, Number(payable_salary || 0) - unpaidLeaveDeduction);
 
       // check here
       const salExistOrNot = await salaryHistoryRepos.findOne({
@@ -121,8 +180,8 @@ const importSalartCurrentMonth = catchAsync(async (req, res, next) => {
         await salaryHistoryRepos.update(
           {
             salary: salary_with_allowance || 0,
-            deduction: total_deduction_allowance || 0,
-            net_salary: payable_salary || 0,
+            deduction: totalDeduction,
+            net_salary: netSalary,
             bonus: bonus || 0,
             base_salary: base_salary || 0,
             total_allowance: total_allowance || 0,
@@ -138,8 +197,8 @@ const importSalartCurrentMonth = catchAsync(async (req, res, next) => {
             month,
             year,
             salary: salary_with_allowance || 0,
-            deduction: total_deduction_allowance || 0,
-            net_salary: payable_salary || 0,
+            deduction: totalDeduction,
+            net_salary: netSalary,
             bonus: bonus || 0,
             base_salary: base_salary || 0,
             total_allowance: total_allowance || 0,

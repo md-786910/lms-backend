@@ -14,6 +14,9 @@ const { Sequelize } = require("../models");
 const eventEmitter = require("../events/eventEmitter");
 const eventObj = require("../events/events");
 const db = require("../models");
+const {
+  syncEmployeeLeavePolicyBalance,
+} = require("../services/leavePolicy.service");
 
 const getAllEmployeLeavs = catchAsync(async (req, res, next) => {
   const query = req.query;
@@ -193,14 +196,14 @@ const employeLeaveApprove = catchAsync(async (req, res, next) => {
     return next(new AppError("Leave type not found", STATUS_CODE.NOT_FOUND));
   }
 
-  checkLeaveAvailable.leave_remaing =
-    Number(checkLeaveAvailable.leave_remaing) - Number(leave.total_days || 0);
-  checkLeaveAvailable.leave_used =
-    Number(checkLeaveAvailable.leave_used) + Number(leave.total_days || 0);
-  await checkLeaveAvailable.save();
-
   leave.status = "approved";
   await leave.save();
+  await syncEmployeeLeavePolicyBalance({
+    company_id,
+    employee_id,
+    leave_type_id: leave.leave_type_id,
+    date: leave.start_date || new Date(),
+  });
 
   // get employee first name
   const employee = await employeeRepos.findOne({
@@ -407,11 +410,13 @@ const adminCreateLeaveRequest = catchAsync(async (req, res, next) => {
 
     // Step 8: If status is approved, update leave balance
     if (status === "approved") {
-      leaveType.leave_remaing =
-        Number(leaveType.leave_remaing || 0) - Number(total_days || 0);
-      leaveType.leave_used =
-        Number(leaveType.leave_used || 0) + Number(total_days || 0);
-      await leaveType.save({ transaction });
+      await syncEmployeeLeavePolicyBalance({
+        company_id,
+        employee_id,
+        leave_type_id,
+        date: start_date || new Date(),
+        transaction,
+      });
 
       // Add activity log
       await activityRepos.addActivity({

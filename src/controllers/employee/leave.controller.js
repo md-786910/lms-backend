@@ -11,11 +11,24 @@ const {
 } = require("../../repository/base");
 const AppError = require("../../utils/appError");
 const catchAsync = require("../../utils/catchAsync");
+const {
+  decorateEmployeeLeaveWithPolicy,
+} = require("../../services/leavePolicy.service");
+
 const getAllLeave = catchAsync(async (req, res, next) => {
   const { id, company_id } = req.user;
-  const leaves = await employeLeaveRepos.findAll({
+  const employeeLeaves = await employeLeaveRepos.findAll({
     where: { employee_id: id, company_id },
   });
+  const leaves = await Promise.all(
+    employeeLeaves.map((leave) =>
+      decorateEmployeeLeaveWithPolicy(leave, {
+        company_id,
+        employee_id: id,
+      })
+    )
+  );
+
   const total_approved = leaves?.reduce((sum, leave) => {
     return sum + Number(leave?.leave_used || 0);
   }, 0);
@@ -30,7 +43,7 @@ const getAllLeave = catchAsync(async (req, res, next) => {
 
   // sumation for total remaining days inclusing all leave use reduce
   const total_remaining = leaves?.reduce((sum, leave) => {
-    return sum + leave?.leave_remaing;
+    return sum + Number(leave?.leave_remaing || 0);
   }, 0);
 
   total_pending = total_pending?.reduce((sum, leave) => {

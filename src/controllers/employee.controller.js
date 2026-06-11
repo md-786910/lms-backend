@@ -21,6 +21,9 @@ const { generateToken } = require("../helpers/jwt");
 const eventEmitter = require("../events/eventEmitter");
 const eventObj = require("../events/events");
 const initEmployeeLeave = require("../repository/initEmployeeLeave");
+const {
+  decorateEmployeeLeaveWithPolicy,
+} = require("../services/leavePolicy.service");
 
 const createEmployee = catchAsync(async (req, res, next) => {
   const { company_id, country_id = 91 } = req.user;
@@ -758,7 +761,7 @@ const getLeaveById = catchAsync(async (req, res, next) => {
       new AppError("Company ID is required", STATUS_CODE.BAD_REQUEST)
     );
   }
-  const employeeLeave = await employeLeaveRepos.findAll({
+  const employeeLeaves = await employeLeaveRepos.findAll({
     attributes: [
       "id",
       "leave_id",
@@ -770,6 +773,15 @@ const getLeaveById = catchAsync(async (req, res, next) => {
     where: { employee_id: id, company_id },
     order: [["id", "ASC"]],
   });
+  const employeeLeave = await Promise.all(
+    employeeLeaves.map((leave) =>
+      decorateEmployeeLeaveWithPolicy(leave, {
+        company_id,
+        employee_id: id,
+      })
+    )
+  );
+
   res.status(STATUS_CODE.OK).json({
     success: true,
     message: "Employee leave fetched successfully",
