@@ -1,9 +1,9 @@
 const {
-  employeLeaveRepos,
   leaveRequestRepos,
   employeeRepos,
   activityRepos,
   employeeSalaryRepos,
+  leaveRepos,
 } = require("../../repository/base");
 const catchAsync = require("../../utils/catchAsync");
 const { Op } = require("sequelize");
@@ -12,6 +12,7 @@ const utc = require("dayjs/plugin/utc");
 const timezone = require("dayjs/plugin/timezone");
 const { getMonthRange } = require("../../config/appConfig");
 const sequelize = require("sequelize");
+const { calculateEmployeeLeaveBalances } = require("../../services/leavePolicyService");
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
@@ -20,11 +21,12 @@ const dashboard = catchAsync(async (req, res, next) => {
     return next(new AppError("User not found", STATUS_CODE.NOT_FOUND));
   }
   const { id, company_id } = req.user;
-  const leave = await employeLeaveRepos.findAll({
-    where: { employee_id: id, company_id },
+  const leave = await calculateEmployeeLeaveBalances({
+    employee_id: id,
+    company_id,
   });
   const leave_balance = leave?.reduce((sum, leave) => {
-    return sum + leave?.leave_remaing;
+    return sum + Number(leave?.remaining || 0);
   }, 0);
 
   // salary
@@ -80,15 +82,20 @@ const dashboard = catchAsync(async (req, res, next) => {
   });
 
   for (const key in employeesOnLeaveToday) {
-    const empLeave = await employeLeaveRepos.findOne({
-      attributes: ["id", "leave_type"],
+    const empLeave = await leaveRepos.findOne({
+      attributes: ["id", "type"],
       where: {
         company_id,
-        employee_id: employeesOnLeaveToday[key].employee_id,
-        leave_id: employeesOnLeaveToday[key].leave_type_id,
+        id: employeesOnLeaveToday[key].leave_type_id,
       },
     });
-    employeesOnLeaveToday[key].dataValues.leave_type = empLeave;
+    employeesOnLeaveToday[key].dataValues.leave_type = empLeave
+      ? {
+          id: empLeave.id,
+          leave_id: empLeave.id,
+          leave_type: empLeave.type,
+        }
+      : null;
   }
 
   const activities = await activityRepos.findAll({

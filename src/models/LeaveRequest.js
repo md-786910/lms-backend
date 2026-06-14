@@ -16,6 +16,12 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "id",
         as: "leave_type",
       });
+
+      this.hasOne(models[TABLE_MODEL_MAPPING[TABLE_NAME.LEAVE]], {
+        sourceKey: "leave_type_id",
+        foreignKey: "id",
+        as: "policy",
+      });
     }
   }
   LeaveRequest.init(

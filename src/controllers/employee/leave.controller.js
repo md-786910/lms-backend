@@ -3,21 +3,23 @@ const eventEmitter = require("../../events/eventEmitter");
 const eventObj = require("../../events/events");
 const db = require("../../models");
 const {
-  employeLeaveRepos,
   leaveRequestRepos,
   activityRepos,
   employeeRepos,
   userRepos,
+  leaveRepos,
 } = require("../../repository/base");
 const AppError = require("../../utils/appError");
 const catchAsync = require("../../utils/catchAsync");
+const { calculateEmployeeLeaveBalances } = require("../../services/leavePolicyService");
 const getAllLeave = catchAsync(async (req, res, next) => {
   const { id, company_id } = req.user;
-  const leaves = await employeLeaveRepos.findAll({
-    where: { employee_id: id, company_id },
+  const leaves = await calculateEmployeeLeaveBalances({
+    company_id,
+    employee_id: id,
   });
   const total_approved = leaves?.reduce((sum, leave) => {
-    return sum + Number(leave?.leave_used || 0);
+    return sum + Number(leave?.used || 0);
   }, 0);
 
   let total_pending = await leaveRequestRepos.findAll({
@@ -30,7 +32,11 @@ const getAllLeave = catchAsync(async (req, res, next) => {
 
   // sumation for total remaining days inclusing all leave use reduce
   const total_remaining = leaves?.reduce((sum, leave) => {
-    return sum + leave?.leave_remaing;
+    return sum + Number(leave?.remaining || 0);
+  }, 0);
+
+  const total_unpaid = leaves?.reduce((sum, leave) => {
+    return sum + Number(leave?.unpaidLeave || 0);
   }, 0);
 
   total_pending = total_pending?.reduce((sum, leave) => {
@@ -45,6 +51,7 @@ const getAllLeave = catchAsync(async (req, res, next) => {
       total_approved,
       total_pending,
       total_remaining,
+      total_unpaid,
     },
   });
 });
@@ -70,15 +77,20 @@ const getAllLeaveRequest = catchAsync(async (req, res, next) => {
   });
 
   for (const key in leaves) {
-    const empLeave = await employeLeaveRepos.findOne({
-      attributes: ["id", "leave_id", "leave_type"],
+    const leaveType = await leaveRepos.findOne({
+      attributes: ["id", "type"],
       where: {
         company_id,
-        employee_id: leaves[key].employee_id,
-        leave_id: leaves[key].leave_type_id,
+        id: leaves[key].leave_type_id,
       },
     });
-    leaves[key].dataValues.leave_type = empLeave;
+    leaves[key].dataValues.leave_type = leaveType
+      ? {
+          id: leaveType.id,
+          leave_id: leaveType.id,
+          leave_type: leaveType.type,
+        }
+      : null;
   }
 
   res.status(200).json({
@@ -152,24 +164,18 @@ const createLeaveRequest = catchAsync(async (req, res, next) => {
     );
   }
 
-  const leave = await employeLeaveRepos.findOne({
-    attributes: [
-      "id",
-      "leave_count",
-      "leave_type",
-      "leave_remaing",
-      "leave_used",
-    ],
+  const leave = await leaveRepos.findOne({
+    attributes: ["id", "type", "status"],
     where: {
       company_id,
-      employee_id,
-      leave_id: leave_type_id,
+      id: leave_type_id,
+      status: "active",
     },
   });
   if (!leave) {
     return next(new AppError("Leave does not found", STATUS_CODE.NOT_FOUND));
   }
-  const { leave_type } = leave;
+  const leave_type = leave.type;
 
   // Step 7: Create leave request (uncomment and customize as needed)
   const transaction = await db.sequelize.transaction();

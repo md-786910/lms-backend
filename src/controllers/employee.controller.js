@@ -21,6 +21,7 @@ const { generateToken } = require("../helpers/jwt");
 const eventEmitter = require("../events/eventEmitter");
 const eventObj = require("../events/events");
 const initEmployeeLeave = require("../repository/initEmployeeLeave");
+const { calculateEmployeeLeaveBalances } = require("../services/leavePolicyService");
 
 const createEmployee = catchAsync(async (req, res, next) => {
   const { company_id, country_id = 91 } = req.user;
@@ -197,6 +198,10 @@ const getAllEmployees = catchAsync(async (req, res, next) => {
     });
     prefix = prefix?.name ?? "EMP";
     employees[key].employee_no = `${prefix}-${employees[key].id}`;
+    employees[key].dataValues.employee_leaves = await calculateEmployeeLeaveBalances({
+      company_id,
+      employee_id: employees[key].id,
+    });
   }
 
   res.status(STATUS_CODE.OK).json({
@@ -758,17 +763,9 @@ const getLeaveById = catchAsync(async (req, res, next) => {
       new AppError("Company ID is required", STATUS_CODE.BAD_REQUEST)
     );
   }
-  const employeeLeave = await employeLeaveRepos.findAll({
-    attributes: [
-      "id",
-      "leave_id",
-      "leave_count",
-      "leave_type",
-      "leave_used",
-      "leave_remaing",
-    ],
-    where: { employee_id: id, company_id },
-    order: [["id", "ASC"]],
+  const employeeLeave = await calculateEmployeeLeaveBalances({
+    company_id,
+    employee_id: id,
   });
   res.status(STATUS_CODE.OK).json({
     success: true,

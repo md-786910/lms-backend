@@ -11,6 +11,7 @@ const {
   employeLeaveRepos,
   employeeDocumentRepos,
 } = require("../repository/base");
+const { normalizePolicy } = require("../services/leavePolicyService");
 
 // GET all prefixes for the company
 const getPrefix = catchAsync(async (req, res, next) => {
@@ -386,7 +387,7 @@ const getLeave = catchAsync(async (req, res, next) => {
   res.status(STATUS_CODE.OK).json({
     status: true,
     message: "Leaves fetched successfully",
-    data: leaves,
+    data: leaves.map(normalizePolicy),
   });
 });
 
@@ -395,16 +396,29 @@ const createLeave = catchAsync(async (req, res, next) => {
   if (!company_id) {
     return next(new AppError("company id not found", STATUS_CODE.NOT_FOUND));
   }
-  const { type, annual_days } = req.body;
+  const {
+    type,
+    annual_days,
+    monthlyAccrual,
+    resetCycleMonths,
+    carryForwardEnabled,
+    salaryDeductionEnabled,
+    status,
+  } = req.body;
   const leave = await leaveRepos.create({
     type,
     annual_days,
+    monthlyAccrual,
+    resetCycleMonths,
+    carryForwardEnabled,
+    salaryDeductionEnabled,
+    status,
     company_id,
   });
   res.status(STATUS_CODE.OK).json({
     status: true,
     message: "Leave created successfully",
-    data: leave,
+    data: normalizePolicy(leave),
   });
 });
 
@@ -423,7 +437,7 @@ const getLeaveById = catchAsync(async (req, res, next) => {
   res.status(STATUS_CODE.OK).json({
     status: true,
     message: "Leave fetched successfully",
-    data: leave,
+    data: leave ? normalizePolicy(leave) : null,
   });
 });
 
@@ -436,7 +450,15 @@ const updateLeave = catchAsync(async (req, res, next) => {
   if (!company_id) {
     return next(new AppError("company id not found", STATUS_CODE.NOT_FOUND));
   }
-  const { type, annual_days } = req.body;
+  const {
+    type,
+    annual_days,
+    monthlyAccrual,
+    resetCycleMonths,
+    carryForwardEnabled,
+    salaryDeductionEnabled,
+    status,
+  } = req.body;
   const leave = await leaveRepos.findOne({
     where: { id, company_id },
   });
@@ -445,11 +467,16 @@ const updateLeave = catchAsync(async (req, res, next) => {
   }
   leave.type = type;
   leave.annual_days = annual_days;
+  leave.monthlyAccrual = monthlyAccrual;
+  leave.resetCycleMonths = resetCycleMonths;
+  leave.carryForwardEnabled = carryForwardEnabled;
+  leave.salaryDeductionEnabled = salaryDeductionEnabled;
+  leave.status = status;
   await leave.save();
   res.status(STATUS_CODE.OK).json({
     status: true,
     message: "Leave updated successfully",
-    data: leave,
+    data: normalizePolicy(leave),
   });
 });
 

@@ -1,7 +1,7 @@
 const {
   leaveRequestRepos,
   employeeRepos,
-  employeLeaveRepos,
+  leaveRepos,
   prefixRepos,
   activityRepos,
 } = require("../repository/base");
@@ -53,7 +53,7 @@ const getAllEmployeLeavs = catchAsync(async (req, res, next) => {
         },
       },
       {
-        "$leave_type.leave_type$": {
+        "$policy.type$": {
           [Op.iLike]: `%${search}%`,
         },
       },
@@ -73,6 +73,12 @@ const getAllEmployeLeavs = catchAsync(async (req, res, next) => {
         ],
         model: employeeRepos,
         as: "employee",
+      },
+      {
+        attributes: ["id", "type"],
+        model: leaveRepos,
+        as: "policy",
+        required: false,
       },
     ],
     order: [
@@ -99,15 +105,20 @@ const getAllEmployeLeavs = catchAsync(async (req, res, next) => {
       },
     });
 
-    const empLeave = await employeLeaveRepos.findOne({
-      attributes: ["id", "leave_type"],
+    const leaveType = await leaveRepos.findOne({
+      attributes: ["id", "type"],
       where: {
         company_id,
-        employee_id: leaves[key].employee_id,
-        leave_id: leaves[key].leave_type_id,
+        id: leaves[key].leave_type_id,
       },
     });
-    leaves[key].dataValues.leave_type = empLeave;
+    leaves[key].dataValues.leave_type = leaveType
+      ? {
+          id: leaveType.id,
+          leave_id: leaveType.id,
+          leave_type: leaveType.type,
+        }
+      : null;
 
     const pref = prefix?.name ?? "EMP";
     leaves[key].employee.employee_no = `${pref}-${leaves[key].employee?.id}`;
@@ -181,23 +192,16 @@ const employeLeaveApprove = catchAsync(async (req, res, next) => {
     return next(new AppError("Leave request not found", STATUS_CODE.NOT_FOUND));
   }
 
-  // check leave available to corresponding type and update it
-  const checkLeaveAvailable = await employeLeaveRepos.findOne({
+  const checkLeaveAvailable = await leaveRepos.findOne({
     where: {
       company_id,
-      employee_id,
-      leave_id: leave?.leave_type_id,
+      id: leave?.leave_type_id,
+      status: "active",
     },
   });
   if (!checkLeaveAvailable) {
     return next(new AppError("Leave type not found", STATUS_CODE.NOT_FOUND));
   }
-
-  checkLeaveAvailable.leave_remaing =
-    Number(checkLeaveAvailable.leave_remaing) - Number(leave.total_days || 0);
-  checkLeaveAvailable.leave_used =
-    Number(checkLeaveAvailable.leave_used) + Number(leave.total_days || 0);
-  await checkLeaveAvailable.save();
 
   leave.status = "approved";
   await leave.save();
@@ -225,7 +229,7 @@ const employeLeaveApprove = catchAsync(async (req, res, next) => {
     employee_id,
     company_id,
     leave_request_id: id,
-    leave_type: checkLeaveAvailable.leave_type,
+    leave_type: checkLeaveAvailable.type,
   });
 
   res.status(200).json({
@@ -349,18 +353,12 @@ const adminCreateLeaveRequest = catchAsync(async (req, res, next) => {
   }
 
   // Step 4: Validate leave type exists
-  const leaveType = await employeLeaveRepos.findOne({
-    attributes: [
-      "id",
-      "leave_count",
-      "leave_type",
-      "leave_remaing",
-      "leave_used",
-    ],
+  const leaveType = await leaveRepos.findOne({
+    attributes: ["id", "type", "status"],
     where: {
       company_id,
-      employee_id,
-      leave_id: leave_type_id,
+      id: leave_type_id,
+      status: "active",
     },
   });
 
@@ -407,12 +405,6 @@ const adminCreateLeaveRequest = catchAsync(async (req, res, next) => {
 
     // Step 8: If status is approved, update leave balance
     if (status === "approved") {
-      leaveType.leave_remaing =
-        Number(leaveType.leave_remaing || 0) - Number(total_days || 0);
-      leaveType.leave_used =
-        Number(leaveType.leave_used || 0) + Number(total_days || 0);
-      await leaveType.save({ transaction });
-
       // Add activity log
       await activityRepos.addActivity({
         company_id,
@@ -427,7 +419,7 @@ const adminCreateLeaveRequest = catchAsync(async (req, res, next) => {
         employee_id,
         company_id,
         leave_request_id: leaveRequest.id,
-        leave_type: leaveType.leave_type,
+        leave_type: leaveType.type,
       });
     } else {
       // Add activity log for pending
@@ -726,9 +718,9 @@ const getYearlyLeaveSummary = catchAsync(async (req, res, next) => {
         as: "employee",
       },
       {
-        attributes: ["id", "leave_type"],
-        model: employeLeaveRepos,
-        as: "leave_type",
+        attributes: ["id", "type"],
+        model: leaveRepos,
+        as: "policy",
       },
     ],
     order: [["start_date", "ASC"]],
@@ -855,9 +847,9 @@ const getYearlyLeaveSummary = catchAsync(async (req, res, next) => {
           as: "employee",
         },
         {
-          attributes: ["id", "leave_type"],
-          model: employeLeaveRepos,
-          as: "leave_type",
+          attributes: ["id", "type"],
+          model: leaveRepos,
+          as: "policy",
         },
       ],
       order: [["start_date", "ASC"]],

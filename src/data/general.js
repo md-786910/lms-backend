@@ -68,15 +68,30 @@ const designationsData = departmentsData.map((dept, index) => ({
 const leavesData = [
   {
     type: "Sick Leave",
-    annual_days: 10,
+    annual_days: 18,
+    monthlyAccrual: 1.5,
+    resetCycleMonths: 6,
+    carryForwardEnabled: true,
+    salaryDeductionEnabled: true,
+    status: "active",
   },
   {
     type: "Earned Leave",
-    annual_days: 10,
+    annual_days: 18,
+    monthlyAccrual: 1.5,
+    resetCycleMonths: 6,
+    carryForwardEnabled: true,
+    salaryDeductionEnabled: true,
+    status: "active",
   },
   {
     type: "Casual Leave",
-    annual_days: 15,
+    annual_days: 18,
+    monthlyAccrual: 1.5,
+    resetCycleMonths: 6,
+    carryForwardEnabled: true,
+    salaryDeductionEnabled: true,
+    status: "active",
   },
 ];
 

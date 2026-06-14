@@ -22,7 +22,12 @@ const updateCreateDesignation = Joi.object({
 
 const updateCreateLeave = Joi.object({
   type: Joi.string().required(),
-  annual_days: Joi.number().required(),
+  annual_days: Joi.number().min(0).required(),
+  monthlyAccrual: Joi.number().min(0).allow(null),
+  resetCycleMonths: Joi.number().integer().min(1).max(12).required(),
+  carryForwardEnabled: Joi.boolean().required(),
+  salaryDeductionEnabled: Joi.boolean().required(),
+  status: Joi.string().valid("active", "inactive").required(),
 });
 
 const updateDocumentCategory = Joi.object({

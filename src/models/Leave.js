@@ -17,8 +17,33 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
       },
       annual_days: {
+        type: DataTypes.FLOAT,
+        allowNull: false,
+      },
+      monthlyAccrual: {
+        type: DataTypes.FLOAT,
+        allowNull: true,
+      },
+      resetCycleMonths: {
         type: DataTypes.INTEGER,
         allowNull: false,
+        defaultValue: 6,
+      },
+      carryForwardEnabled: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+      },
+      salaryDeductionEnabled: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+      },
+      status: {
+        type: DataTypes.ENUM,
+        values: ["active", "inactive"],
+        allowNull: false,
+        defaultValue: "active",
       },
     },
     {

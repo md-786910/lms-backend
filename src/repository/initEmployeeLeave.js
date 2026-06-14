@@ -20,7 +20,7 @@ module.exports = async ({ company_id, employee_id }) => {
           leave_id: id,
           leave_count: annual_days,
           leave_type: type,
-          leave_remaing: annual_days,
+          leave_remaing: 0,
         },
         { transaction }
       );
