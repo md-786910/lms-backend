@@ -1,15 +1,37 @@
 const { Op } = require("sequelize");
 const { leaveRepos, leaveRequestRepos } = require("../repository/base");
 
-const roundLeave = (value) => Math.round((Number(value || 0) + Number.EPSILON) * 100) / 100;
+const roundLeave = (value) =>
+  Math.round((Number(value || 0) + Number.EPSILON) * 100) / 100;
+
+const readPolicyValue = (raw, camelKey, snakeKey, defaultValue) => {
+  const value = raw?.[camelKey] ?? raw?.[snakeKey];
+  return value === undefined || value === null ? defaultValue : value;
+};
+
+const readPolicyBoolean = (raw, camelKey, snakeKey, defaultValue = true) => {
+  const value = readPolicyValue(raw, camelKey, snakeKey, defaultValue);
+  if (typeof value === "string") {
+    return value.toLowerCase() === "true";
+  }
+  return Boolean(value);
+};
 
 const normalizePolicy = (policy) => {
   const raw = policy?.toJSON ? policy.toJSON() : policy;
   const totalEntitlement = Number(raw?.annual_days || 0);
-  const resetCycleMonths = Number(raw?.resetCycleMonths || 6);
+  const resetCycleMonths = Number(
+    readPolicyValue(raw, "resetCycleMonths", "reset_cycle_months", 6)
+  );
+  const configuredMonthlyAccrual = readPolicyValue(
+    raw,
+    "monthlyAccrual",
+    "monthly_accrual",
+    null
+  );
   const monthlyAccrual =
-    raw?.monthlyAccrual !== null && raw?.monthlyAccrual !== undefined
-      ? Number(raw.monthlyAccrual)
+    configuredMonthlyAccrual !== null && configuredMonthlyAccrual !== undefined
+      ? Number(configuredMonthlyAccrual)
       : resetCycleMonths
       ? totalEntitlement / 12
       : 0;
@@ -20,8 +42,18 @@ const normalizePolicy = (policy) => {
     totalEntitlement,
     monthlyAccrual,
     resetCycleMonths,
-    carryForwardEnabled: raw?.carryForwardEnabled !== false,
-    salaryDeductionEnabled: raw?.salaryDeductionEnabled !== false,
+    carryForwardEnabled: readPolicyBoolean(
+      raw,
+      "carryForwardEnabled",
+      "carry_forward_enabled",
+      true
+    ),
+    salaryDeductionEnabled: readPolicyBoolean(
+      raw,
+      "salaryDeductionEnabled",
+      "salary_deduction_enabled",
+      true
+    ),
     status: raw?.status || "active",
   };
 };
@@ -46,6 +78,29 @@ const getMonthsAccruedInCycle = (date, cycleStart, cycleEnd) => {
     (effective.getMonth() - cycleStart.getMonth()) +
     1
   );
+};
+
+const getMonthRange = (date = new Date()) => {
+  const target = new Date(date);
+  const monthStart = new Date(
+    target.getFullYear(),
+    target.getMonth(),
+    1,
+    0,
+    0,
+    0,
+    0
+  );
+  const monthEnd = new Date(
+    target.getFullYear(),
+    target.getMonth() + 1,
+    0,
+    23,
+    59,
+    59,
+    999
+  );
+  return { monthStart, monthEnd };
 };
 
 const parseLeaveOn = (leaveOn) => {
@@ -78,6 +133,26 @@ const getLeaveDaysInsideCycle = (request, cycleStart, cycleEnd) => {
   return 0;
 };
 
+const getLeaveDaysInsideRange = (request, rangeStart, rangeEnd) => {
+  const leaveOn = parseLeaveOn(request.leave_on);
+  if (leaveOn.length) {
+    return leaveOn.reduce((sum, day) => {
+      const dayDate = new Date(day.date);
+      if (dayDate >= rangeStart && dayDate <= rangeEnd) {
+        return sum + Number(day.count || 0);
+      }
+      return sum;
+    }, 0);
+  }
+
+  const start = new Date(request.start_date);
+  const end = new Date(request.end_date);
+  if (start <= rangeEnd && end >= rangeStart) {
+    return Number(request.total_days || 0);
+  }
+  return 0;
+};
+
 const calculateEmployeeLeaveBalances = async ({
   company_id,
   employee_id,
@@ -99,10 +174,22 @@ const calculateEmployeeLeaveBalances = async ({
   for (const policyModel of policies) {
     const policy = normalizePolicy(policyModel);
     const { cycleStart, cycleEnd } = getCycleRange(asOf, policy.resetCycleMonths);
+    const { monthStart, monthEnd } = getMonthRange(asOf);
+    const currentMonthStart =
+      monthStart < cycleStart ? cycleStart : monthStart;
+    const currentMonthEnd = monthEnd > cycleEnd ? cycleEnd : monthEnd;
+    const previousPeriodEnd = new Date(currentMonthStart.getTime() - 1);
     const cycleEntitlement = roundLeave(
       (policy.totalEntitlement / 12) * policy.resetCycleMonths
     );
     const monthsAccrued = getMonthsAccruedInCycle(asOf, cycleStart, cycleEnd);
+    const previousMonthsAccrued = Math.max(0, monthsAccrued - 1);
+    const currentMonthAccrual = roundLeave(
+      Math.min(policy.monthlyAccrual, cycleEntitlement)
+    );
+    const accruedBeforeCurrentMonth = roundLeave(
+      Math.min(previousMonthsAccrued * policy.monthlyAccrual, cycleEntitlement)
+    );
     const accrued = roundLeave(
       Math.min(monthsAccrued * policy.monthlyAccrual, cycleEntitlement)
     );
@@ -132,7 +219,30 @@ const calculateEmployeeLeaveBalances = async ({
         0
       )
     );
-    const available = roundLeave(accrued - used);
+    const usedBeforeCurrentMonth = roundLeave(
+      approvedRequests.reduce(
+        (sum, request) =>
+          previousPeriodEnd >= cycleStart
+            ? sum + getLeaveDaysInsideRange(request, cycleStart, previousPeriodEnd)
+            : sum,
+        0
+      )
+    );
+    const currentMonthUsed = roundLeave(
+      approvedRequests.reduce(
+        (sum, request) =>
+          sum + getLeaveDaysInsideRange(request, currentMonthStart, currentMonthEnd),
+        0
+      )
+    );
+    const carriedForward = policy.carryForwardEnabled
+      ? roundLeave(accruedBeforeCurrentMonth - usedBeforeCurrentMonth)
+      : 0;
+    const available = roundLeave(
+      policy.carryForwardEnabled
+        ? accrued - used
+        : currentMonthAccrual - currentMonthUsed
+    );
     const unpaidLeave = roundLeave(Math.max(0, -available));
     const excessLeave = roundLeave(Math.max(0, used - cycleEntitlement));
 
@@ -146,7 +256,7 @@ const calculateEmployeeLeaveBalances = async ({
       leave_used: used,
       available,
       used,
-      carriedForward: 0,
+      carriedForward,
       remaining: available,
       unpaidLeave,
       excessLeave,
@@ -155,6 +265,9 @@ const calculateEmployeeLeaveBalances = async ({
       resetCycleMonths: policy.resetCycleMonths,
       cycleEntitlement,
       accrued,
+      currentMonthAccrual,
+      currentMonthUsed,
+      usedBeforeCurrentMonth,
       cycleStart,
       cycleEnd,
       carryForwardEnabled: policy.carryForwardEnabled,

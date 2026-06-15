@@ -13,6 +13,25 @@ const {
 } = require("../repository/base");
 const { normalizePolicy } = require("../services/leavePolicyService");
 
+const toBoolean = (value, fallback = true) => {
+  if (value === undefined || value === null) return fallback;
+  if (typeof value === "string") return value.toLowerCase() === "true";
+  return Boolean(value);
+};
+
+const buildLeavePolicyPayload = (body) => ({
+  type: body.type,
+  annual_days: Number(body.annual_days ?? 0),
+  monthlyAccrual:
+    body.monthlyAccrual === null || body.monthlyAccrual === undefined
+      ? null
+      : Number(body.monthlyAccrual),
+  resetCycleMonths: Number(body.resetCycleMonths ?? 6),
+  carryForwardEnabled: toBoolean(body.carryForwardEnabled),
+  salaryDeductionEnabled: toBoolean(body.salaryDeductionEnabled),
+  status: body.status || "active",
+});
+
 // GET all prefixes for the company
 const getPrefix = catchAsync(async (req, res, next) => {
   const company_id = req.user?.company_id;
@@ -396,23 +415,8 @@ const createLeave = catchAsync(async (req, res, next) => {
   if (!company_id) {
     return next(new AppError("company id not found", STATUS_CODE.NOT_FOUND));
   }
-  const {
-    type,
-    annual_days,
-    monthlyAccrual,
-    resetCycleMonths,
-    carryForwardEnabled,
-    salaryDeductionEnabled,
-    status,
-  } = req.body;
   const leave = await leaveRepos.create({
-    type,
-    annual_days,
-    monthlyAccrual,
-    resetCycleMonths,
-    carryForwardEnabled,
-    salaryDeductionEnabled,
-    status,
+    ...buildLeavePolicyPayload(req.body),
     company_id,
   });
   res.status(STATUS_CODE.OK).json({
@@ -450,33 +454,25 @@ const updateLeave = catchAsync(async (req, res, next) => {
   if (!company_id) {
     return next(new AppError("company id not found", STATUS_CODE.NOT_FOUND));
   }
-  const {
-    type,
-    annual_days,
-    monthlyAccrual,
-    resetCycleMonths,
-    carryForwardEnabled,
-    salaryDeductionEnabled,
-    status,
-  } = req.body;
   const leave = await leaveRepos.findOne({
     where: { id, company_id },
   });
   if (!leave) {
     return next(new AppError("leave not found", STATUS_CODE.NOT_FOUND));
   }
-  leave.type = type;
-  leave.annual_days = annual_days;
-  leave.monthlyAccrual = monthlyAccrual;
-  leave.resetCycleMonths = resetCycleMonths;
-  leave.carryForwardEnabled = carryForwardEnabled;
-  leave.salaryDeductionEnabled = salaryDeductionEnabled;
-  leave.status = status;
-  await leave.save();
+  const policyPayload = buildLeavePolicyPayload(req.body);
+  await leaveRepos.update(policyPayload, {
+    where: { id, company_id },
+  });
+
+  const updatedLeave = await leaveRepos.findOne({
+    where: { id, company_id },
+  });
+
   res.status(STATUS_CODE.OK).json({
     status: true,
     message: "Leave updated successfully",
-    data: normalizePolicy(leave),
+    data: normalizePolicy(updatedLeave),
   });
 });
 

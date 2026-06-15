@@ -187,8 +187,10 @@ const getAllEmployees = catchAsync(async (req, res, next) => {
     order: [["createdAt", "DESC"]],
   });
 
-  for (const key in employees) {
-    const department_id = employees[key].department_id;
+  const employeeRows = employees.map((employee) => employee.toJSON());
+
+  for (const key in employeeRows) {
+    const department_id = employeeRows[key].department_id;
     let prefix = await prefixRepos.findOne({
       attributes: ["name"],
       where: {
@@ -197,17 +199,17 @@ const getAllEmployees = catchAsync(async (req, res, next) => {
       },
     });
     prefix = prefix?.name ?? "EMP";
-    employees[key].employee_no = `${prefix}-${employees[key].id}`;
-    employees[key].dataValues.employee_leaves = await calculateEmployeeLeaveBalances({
+    employeeRows[key].employee_no = `${prefix}-${employeeRows[key].id}`;
+    employeeRows[key].employee_leaves = await calculateEmployeeLeaveBalances({
       company_id,
-      employee_id: employees[key].id,
+      employee_id: employeeRows[key].id,
     });
   }
 
   res.status(STATUS_CODE.OK).json({
     success: true,
     message: "Employees fetched successfully",
-    data: employees,
+    data: employeeRows,
   });
 });
 
