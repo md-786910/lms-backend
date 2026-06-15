@@ -3,6 +3,7 @@ const {
   employeeRepos,
   leaveRequestRepos,
   employeLeaveRepos,
+  leaveRepos,
   activityRepos,
   prefixRepos,
 } = require("../repository/base");
@@ -50,9 +51,10 @@ const getDashboard = catchAsync(async (req, res, next) => {
         ],
       },
       {
-        model: employeLeaveRepos,
-        as: "leave_type",
-        attributes: ["id", "leave_type"],
+        model: leaveRepos,
+        as: "policy",
+        attributes: ["id", "type"],
+        required: false,
       },
     ],
     order: [["createdAt", "DESC"]],
@@ -78,6 +80,13 @@ const getDashboard = catchAsync(async (req, res, next) => {
     if (!request.employee.employee_no) {
       request.employee.employee_no = `${prefixName}-${request.employee?.id}`;
     }
+    request.dataValues.leave_type = request.policy
+      ? {
+          id: request.policy.id,
+          leave_id: request.policy.id,
+          leave_type: request.policy.type,
+        }
+      : null;
   }
 
   const startOfToday = dayjs().tz("Asia/Kolkata").startOf("day").toDate();
