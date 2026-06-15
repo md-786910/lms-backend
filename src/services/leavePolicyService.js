@@ -103,6 +103,13 @@ const getMonthRange = (date = new Date()) => {
   return { monthStart, monthEnd };
 };
 
+const getYearRange = (date = new Date()) => {
+  const target = new Date(date);
+  const yearStart = new Date(target.getFullYear(), 0, 1, 0, 0, 0, 0);
+  const yearEnd = new Date(target.getFullYear(), 11, 31, 23, 59, 59, 999);
+  return { yearStart, yearEnd };
+};
+
 const parseLeaveOn = (leaveOn) => {
   if (!leaveOn) return [];
   if (Array.isArray(leaveOn)) return leaveOn;
@@ -175,6 +182,7 @@ const calculateEmployeeLeaveBalances = async ({
     const policy = normalizePolicy(policyModel);
     const { cycleStart, cycleEnd } = getCycleRange(asOf, policy.resetCycleMonths);
     const { monthStart, monthEnd } = getMonthRange(asOf);
+    const { yearStart, yearEnd } = getYearRange(asOf);
     const currentMonthStart =
       monthStart < cycleStart ? cycleStart : monthStart;
     const currentMonthEnd = monthEnd > cycleEnd ? cycleEnd : monthEnd;
@@ -213,6 +221,25 @@ const calculateEmployeeLeaveBalances = async ({
       },
     });
 
+    const approvedYearRequests = await leaveRequestRepos.findAll({
+      where: {
+        company_id,
+        employee_id,
+        leave_type_id: policy.id,
+        status: "approved",
+        [Op.or]: [
+          { start_date: { [Op.between]: [yearStart, yearEnd] } },
+          { end_date: { [Op.between]: [yearStart, yearEnd] } },
+          {
+            [Op.and]: [
+              { start_date: { [Op.lte]: yearStart } },
+              { end_date: { [Op.gte]: yearEnd } },
+            ],
+          },
+        ],
+      },
+    });
+
     const used = roundLeave(
       approvedRequests.reduce(
         (sum, request) => sum + getLeaveDaysInsideCycle(request, cycleStart, cycleEnd),
@@ -245,6 +272,13 @@ const calculateEmployeeLeaveBalances = async ({
     );
     const unpaidLeave = roundLeave(Math.max(0, -available));
     const excessLeave = roundLeave(Math.max(0, used - cycleEntitlement));
+    const annualUsed = roundLeave(
+      approvedYearRequests.reduce(
+        (sum, request) => sum + getLeaveDaysInsideRange(request, yearStart, yearEnd),
+        0
+      )
+    );
+    const annualRemaining = roundLeave(policy.totalEntitlement - annualUsed);
 
     balances.push({
       id: policy.id,
@@ -256,6 +290,9 @@ const calculateEmployeeLeaveBalances = async ({
       leave_used: used,
       available,
       used,
+      annualTotal: policy.totalEntitlement,
+      annualUsed,
+      annualRemaining,
       carriedForward,
       remaining: available,
       unpaidLeave,
