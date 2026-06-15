@@ -64,9 +64,9 @@ const getAllLeaveRequest = catchAsync(async (req, res, next) => {
       [
         db.Sequelize.literal(`
             CASE
-              WHEN status = 'pending' THEN 1
-              WHEN status = 'approved' THEN 2
-              WHEN status = 'rejected' THEN 3
+              WHEN "LeaveRequest"."status" = 'pending' THEN 1
+              WHEN "LeaveRequest"."status" = 'approved' THEN 2
+              WHEN "LeaveRequest"."status" = 'rejected' THEN 3
               ELSE 4
             END
           `),
