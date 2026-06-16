@@ -34,6 +34,9 @@ const fileRepos = db["file"];
 
 const employeLeaveRepos = db[TABLE_MODEL_MAPPING[TABLE_NAME.EMPLOYEE_LEAVE]];
 
+const employeeLeaveMonthlySummaryRepos =
+  db[TABLE_MODEL_MAPPING[TABLE_NAME.EMPLOYEE_LEAVE_MONTHLY_SUMMARY]];
+
 const leaveRequestRepos = db[TABLE_MODEL_MAPPING[TABLE_NAME.LEAVE_REQUEST]];
 
 const activityRepos = db[TABLE_MODEL_MAPPING[TABLE_NAME.ACTIVITY]];
@@ -47,6 +50,7 @@ module.exports = {
   notificationRepos,
   activityRepos,
   employeLeaveRepos,
+  employeeLeaveMonthlySummaryRepos,
   leaveRequestRepos,
   documentCategoryRepos,
   userRepos,

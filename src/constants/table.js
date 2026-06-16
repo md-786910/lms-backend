@@ -10,6 +10,7 @@ const TABLE_NAME = {
   EMPLOYEE_SALARY: "employee_salaries",
   EMPLOYEE_DOCUMENT: "employee_documents",
   EMPLOYEE_LEAVE: "employee_leaves",
+  EMPLOYEE_LEAVE_MONTHLY_SUMMARY: "employee_leave_monthly_summaries",
   LEAVE_REQUEST: "leave_requests",
   ACTIVITY: "activities",
 
@@ -41,6 +42,7 @@ const TABLE_MODEL_MAPPING = {
   [TABLE_NAME.EMPLOYEE_PERSONAL_INFORMATION]: "EmployeePersonalInformation",
   [TABLE_NAME.EMPLOYEE_SALARY]: "EmployeeSalary",
   [TABLE_NAME.EMPLOYEE_LEAVE]: "EmployeeLeave",
+  [TABLE_NAME.EMPLOYEE_LEAVE_MONTHLY_SUMMARY]: "EmployeeLeaveMonthlySummary",
   [TABLE_NAME.LEAVE_REQUEST]: "LeaveRequest",
   [TABLE_NAME.ACTIVITY]: "Activity",
 
