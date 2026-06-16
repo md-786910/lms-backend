@@ -14,6 +14,54 @@ const { Sequelize } = require("../models");
 const eventEmitter = require("../events/eventEmitter");
 const eventObj = require("../events/events");
 const db = require("../models");
+const { normalizePolicy } = require("../services/leavePolicyService");
+
+const roundLeave = (value) =>
+  Math.round((Number(value || 0) + Number.EPSILON) * 100) / 100;
+
+const parseLeaveOn = (leaveOn) => {
+  if (!leaveOn) return [];
+  if (Array.isArray(leaveOn)) return leaveOn;
+  try {
+    return JSON.parse(leaveOn);
+  } catch (error) {
+    return [];
+  }
+};
+
+const createEmptyMonthlyLeaveTotals = (monthNames) =>
+  monthNames.reduce((acc, monthName) => {
+    acc[monthName] = {
+      availed: 0,
+      deduction: 0,
+    };
+    return acc;
+  }, {});
+
+const buildCycleStartDate = (year, monthIndex, resetCycleMonths = 6) => {
+  const cycleMonths = Math.max(1, Math.min(Number(resetCycleMonths || 6), 12));
+  const cycleStartMonth = Math.floor(monthIndex / cycleMonths) * cycleMonths;
+  return new Date(Number(year), cycleStartMonth, 1, 0, 0, 0, 0);
+};
+
+const getMonthlyAccruedLeave = (policy, year, monthIndex) => {
+  const cycleStart = buildCycleStartDate(year, monthIndex, policy.resetCycleMonths);
+  const monthsAccrued =
+    (Number(year) - cycleStart.getFullYear()) * 12 +
+    (monthIndex - cycleStart.getMonth()) +
+    1;
+  const cycleEntitlement = roundLeave(
+    (Number(policy.totalEntitlement || 0) / 12) *
+      Math.max(1, Math.min(Number(policy.resetCycleMonths || 6), 12))
+  );
+
+  return roundLeave(
+    Math.min(
+      Math.max(0, monthsAccrued) * Number(policy.monthlyAccrual || 0),
+      cycleEntitlement
+    )
+  );
+};
 
 const getAllEmployeLeavs = catchAsync(async (req, res, next) => {
   const query = req.query;
@@ -639,6 +687,15 @@ const getYearlyLeaveSummary = catchAsync(async (req, res, next) => {
     let result = STATIC_LEAVE_DATA_2025.map((emp, index) => ({
       ...emp,
       employee_id: index + 1,
+      monthly: monthNames.reduce((acc, monthName) => {
+        acc[monthName] = {
+          availed: Number(emp[monthName] || 0),
+          deduction: 0,
+        };
+        return acc;
+      }, {}),
+      total_availed: Number(emp.total || 0),
+      total_deduction: 0,
     }));
 
     // Filter by employee name if provided
@@ -659,7 +716,7 @@ const getYearlyLeaveSummary = catchAsync(async (req, res, next) => {
         status: true,
         message: "Monthly leave details fetched successfully",
         data: {
-          summary: result.filter((emp) => emp[monthName] > 0),
+          summary: result.filter((emp) => emp.monthly?.[monthName]?.availed > 0),
           details: [],
           month: monthName,
           year: 2025,
@@ -718,7 +775,16 @@ const getYearlyLeaveSummary = catchAsync(async (req, res, next) => {
         as: "employee",
       },
       {
-        attributes: ["id", "type"],
+        attributes: [
+          "id",
+          "type",
+          "annual_days",
+          "monthlyAccrual",
+          "resetCycleMonths",
+          "carryForwardEnabled",
+          "salaryDeductionEnabled",
+          "status",
+        ],
         model: leaveRepos,
         as: "policy",
       },
@@ -752,6 +818,8 @@ const getYearlyLeaveSummary = catchAsync(async (req, res, next) => {
       employee_id: emp.id,
       name: `${emp.first_name} ${emp.last_name || ""}`.trim().toUpperCase(),
       employee_no: `${pref}-${emp.id}`,
+      monthly: createEmptyMonthlyLeaveTotals(monthNames),
+      leave_types: {},
       january: 0,
       february: 0,
       march: 0,
@@ -765,52 +833,117 @@ const getYearlyLeaveSummary = catchAsync(async (req, res, next) => {
       november: 0,
       december: 0,
       total: 0,
+      total_availed: 0,
+      total_deduction: 0,
     };
   }
 
-  // Calculate leave days per month for each employee
+  const leaveUsageByEmployeeAndPolicy = {};
+
   for (const leave of leaveRequests) {
     const empId = leave.employee_id;
     if (!employeeSummary[empId]) continue;
 
-    const startDate = new Date(leave.start_date);
-    const endDate = new Date(leave.end_date);
-    const leaveOn = JSON.parse(leave.leave_on || "[]");
+    const policy = normalizePolicy(leave.policy);
+    const leaveTypeId = leave.leave_type_id || policy.id || "unknown";
+    const usageKey = `${empId}-${leaveTypeId}`;
+    if (!leaveUsageByEmployeeAndPolicy[usageKey]) {
+      leaveUsageByEmployeeAndPolicy[usageKey] = {
+        policy,
+        monthly: Array.from({ length: 12 }, () => 0),
+      };
+    }
 
-    // If leave_on array has data, use it for precise calculation
+    if (!employeeSummary[empId].leave_types[leaveTypeId]) {
+      employeeSummary[empId].leave_types[leaveTypeId] = {
+        id: leaveTypeId,
+        name: policy.leaveType || leave.policy?.type || "Leave",
+        monthly: createEmptyMonthlyLeaveTotals(monthNames),
+        total_availed: 0,
+        total_deduction: 0,
+      };
+    }
+
+    const leaveOn = parseLeaveOn(leave.leave_on);
     if (leaveOn.length > 0) {
       for (const day of leaveOn) {
-        console.log({ day });
         const dayDate = new Date(day.date);
         if (dayDate.getFullYear() === parseInt(year)) {
           const monthIndex = dayDate.getMonth();
-          const dayValue = day.day === "full" ? 1 : 0.5;
-          employeeSummary[empId][monthNames[monthIndex]] += day?.count || 0;
-          employeeSummary[empId].total += day?.count;
+          const dayValue = Number(day?.count ?? (day.day === "full" ? 1 : 0.5));
+          leaveUsageByEmployeeAndPolicy[usageKey].monthly[monthIndex] += dayValue;
         }
       }
     } else {
-      // Fallback: distribute total_days across the date range
       const totalDays = parseFloat(leave.total_days) || 0;
+      const startDate = new Date(leave.start_date);
       const startMonth = startDate.getMonth();
-      const endMonth = endDate.getMonth();
-
-      if (
-        startMonth === endMonth &&
-        startDate.getFullYear() === parseInt(year)
-      ) {
-        // Same month
-        employeeSummary[empId][monthNames[startMonth]] += totalDays;
-        employeeSummary[empId].total += totalDays;
-      } else {
-        // Spans multiple months - add to start month (simplified)
-        if (startDate.getFullYear() === parseInt(year)) {
-          employeeSummary[empId][monthNames[startMonth]] += totalDays;
-          employeeSummary[empId].total += totalDays;
-        }
+      if (startDate.getFullYear() === parseInt(year)) {
+        leaveUsageByEmployeeAndPolicy[usageKey].monthly[startMonth] += totalDays;
       }
     }
   }
+
+  Object.entries(leaveUsageByEmployeeAndPolicy).forEach(([usageKey, usage]) => {
+    const [empId, leaveTypeId] = usageKey.split("-");
+    const employee = employeeSummary[empId];
+    if (!employee) return;
+
+    const typeSummary = employee.leave_types[leaveTypeId];
+    let cycleUsed = 0;
+
+    usage.monthly.forEach((availedRaw, monthIndex) => {
+      const availed = roundLeave(availedRaw);
+      const monthName = monthNames[monthIndex];
+      const policy = usage.policy;
+      const cycleStart = buildCycleStartDate(
+        year,
+        monthIndex,
+        policy.resetCycleMonths
+      );
+
+      if (monthIndex === cycleStart.getMonth()) {
+        cycleUsed = 0;
+      }
+
+      const availableBeforeMonth = policy.carryForwardEnabled
+        ? Math.max(0, getMonthlyAccruedLeave(policy, year, monthIndex) - cycleUsed)
+        : Number(policy.monthlyAccrual || 0);
+      const deduction = policy.salaryDeductionEnabled
+        ? roundLeave(Math.max(0, availed - availableBeforeMonth))
+        : 0;
+
+      cycleUsed = roundLeave(cycleUsed + availed);
+
+      employee.monthly[monthName].availed = roundLeave(
+        employee.monthly[monthName].availed + availed
+      );
+      employee.monthly[monthName].deduction = roundLeave(
+        employee.monthly[monthName].deduction + deduction
+      );
+      employee[monthName] = employee.monthly[monthName].availed;
+      employee.total = roundLeave(employee.total + availed);
+      employee.total_availed = employee.total;
+      employee.total_deduction = roundLeave(employee.total_deduction + deduction);
+
+      if (typeSummary) {
+        typeSummary.monthly[monthName].availed = roundLeave(
+          typeSummary.monthly[monthName].availed + availed
+        );
+        typeSummary.monthly[monthName].deduction = roundLeave(
+          typeSummary.monthly[monthName].deduction + deduction
+        );
+        typeSummary.total_availed = roundLeave(typeSummary.total_availed + availed);
+        typeSummary.total_deduction = roundLeave(
+          typeSummary.total_deduction + deduction
+        );
+      }
+    });
+  });
+
+  Object.values(employeeSummary).forEach((employee) => {
+    employee.leave_types = Object.values(employee.leave_types);
+  });
 
   // Convert to array and apply month filter if provided
   let result = Object.values(employeeSummary);
@@ -847,7 +980,16 @@ const getYearlyLeaveSummary = catchAsync(async (req, res, next) => {
           as: "employee",
         },
         {
-          attributes: ["id", "type"],
+          attributes: [
+            "id",
+            "type",
+            "annual_days",
+            "monthlyAccrual",
+            "resetCycleMonths",
+            "carryForwardEnabled",
+            "salaryDeductionEnabled",
+            "status",
+          ],
           model: leaveRepos,
           as: "policy",
         },
@@ -856,10 +998,14 @@ const getYearlyLeaveSummary = catchAsync(async (req, res, next) => {
     });
 
     return res.status(200).json({
-      status: true,
-      message: "Monthly leave details fetched successfully",
-      data: {
-        summary: result.filter((emp) => emp[monthName] > 0),
+        status: true,
+        message: "Monthly leave details fetched successfully",
+        data: {
+          summary: result.filter(
+            (emp) =>
+              (emp.monthly?.[monthName]?.availed || 0) > 0 ||
+              (emp.monthly?.[monthName]?.deduction || 0) > 0
+          ),
         details: detailedLeaves,
         month: monthName,
         year: parseInt(year),
