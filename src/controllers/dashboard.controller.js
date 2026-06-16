@@ -3,6 +3,7 @@ const {
   employeeRepos,
   leaveRequestRepos,
   employeLeaveRepos,
+  employeeLeaveMonthlySummaryRepos,
   activityRepos,
   prefixRepos,
 } = require("../repository/base");
@@ -16,9 +17,73 @@ const timezone = require("dayjs/plugin/timezone");
 const { getMonthRange } = require("../config/appConfig");
 const sendEmail = require("../utils/sendMail");
 const buildHtmlReport = require("../utils/leaveReportTemplate");
+const {
+  buildLeaveMonthlySummaryRecords,
+  getYearRangeWhere,
+  syncLeaveMonthlySummaryRecords,
+} = require("../utils/leaveCarryForward");
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
+
+const getMonthlyLeaveSummaryRows = async ({ company_id, range }) => {
+  const [employees, employeeLeaves, leaveRequests] = await Promise.all([
+    employeeRepos.findAll({
+      where: {
+        company_id,
+        is_suspended: false,
+      },
+      attributes: ["id", "first_name", "last_name", "department_id"],
+      order: [["first_name", "ASC"]],
+    }),
+    employeLeaveRepos.findAll({
+      where: {
+        company_id,
+      },
+    }),
+    leaveRequestRepos.findAll({
+      where: {
+        company_id,
+        status: "approved",
+        ...getYearRangeWhere(range.year),
+      },
+    }),
+  ]);
+
+  const { summaries, records } = buildLeaveMonthlySummaryRecords({
+    employees,
+    employeeLeaves,
+    leaveRequests,
+    year: range.year,
+  });
+
+  await syncLeaveMonthlySummaryRecords({
+    employeeLeaveMonthlySummaryRepos,
+    records,
+  });
+
+  const monthName = range.monthName.toLowerCase();
+  return summaries
+    .map((summary) => {
+      const [first_name = "", ...restName] = summary.name
+        .split(" ")
+        .map((part) => part.charAt(0) + part.slice(1).toLowerCase());
+      return {
+        employee_id: summary.employee_id,
+        first_name,
+        last_name: restName.join(" "),
+        total_leave: summary[monthName] || 0,
+        leave_availed: summary[monthName] || 0,
+        leave_deduction: summary[`${monthName}_deduction`] || 0,
+      };
+    })
+    .sort((a, b) => {
+      if (b.leave_availed !== a.leave_availed) {
+        return b.leave_availed - a.leave_availed;
+      }
+      return b.leave_deduction - a.leave_deduction;
+    });
+};
 
 const getDashboard = catchAsync(async (req, res, next) => {
   const { company_id } = req.user;
@@ -156,133 +221,18 @@ const getDashboard = catchAsync(async (req, res, next) => {
     order: [["createdAt", "DESC"]],
   });
 
-  // Total leave employee - prev month and next month
+  // Total leave employee - previous and current month
   const range1 = getMonthRange("previous");
-  const previous_month_leaves = await employeeRepos.findAll({
-    where: {
-      company_id,
-    },
-    attributes: [
-      "id",
-      "first_name",
-      "last_name",
-      "email",
-      [
-        sequelize.fn(
-          "COALESCE",
-          sequelize.fn("SUM", sequelize.col("leaveRequests.total_days")),
-          0
-        ),
-        "total_leave",
-      ],
-    ],
-    include: [
-      {
-        model: leaveRequestRepos,
-        as: "leaveRequests",
-        required: false, // IMPORTANT: LEFT JOIN
-        attributes: [],
-        where: {
-          status: "approved",
-          start_date: {
-            [Op.gte]: range1?.startDate,
-            [Op.lt]: range1?.endDate,
-          },
-        },
-      },
-    ],
-    group: ["Employee.id"],
-    order: [[sequelize.literal("total_leave"), "DESC"]],
-    raw: false,
+  const previous_month_leaves = await getMonthlyLeaveSummaryRows({
+    company_id,
+    range: range1,
   });
-
-  // const previous_month_leaves = await leaveRequestRepos.findAll({
-  //   where: {
-  //     status: "approved",
-  //     start_date: {
-  //       [Op.gte]: range1?.startDate,
-  //       [Op.lt]: range1?.endDate,
-  //     },
-  //   },
-  //   attributes: [
-  //     "employee_id",
-  //     [sequelize.fn("SUM", sequelize.col("total_days")), "total_leave"],
-  //   ],
-  //   include: [
-  //     {
-  //       model: employeeRepos,
-  //       as: "employee",
-  //       attributes: ["first_name", "last_name", "email"],
-  //     },
-  //   ],
-  //   group: ["employee_id", "employee.id"],
-  //   order: [[sequelize.literal("total_leave"), "DESC"]],
-  //   raw: false,
-  // });
-
-  // current month
 
   const range2 = getMonthRange("current");
-  const current_month_leaves = await employeeRepos.findAll({
-    where: {
-      company_id,
-    },
-    attributes: [
-      "id",
-      "first_name",
-      "last_name",
-      "email",
-      [
-        sequelize.fn(
-          "COALESCE",
-          sequelize.fn("SUM", sequelize.col("leaveRequests.total_days")),
-          0
-        ),
-        "total_leave",
-      ],
-    ],
-    include: [
-      {
-        model: leaveRequestRepos,
-        as: "leaveRequests",
-        required: false, // IMPORTANT: LEFT JOIN
-        attributes: [],
-        where: {
-          status: "approved",
-          start_date: {
-            [Op.gte]: range2?.startDate,
-            [Op.lt]: range2?.endDate,
-          },
-        },
-      },
-    ],
-    group: ["Employee.id"],
-    order: [[sequelize.literal("total_leave"), "DESC"]],
-    raw: false,
+  const current_month_leaves = await getMonthlyLeaveSummaryRows({
+    company_id,
+    range: range2,
   });
-  // const current_month_leaves = await leaveRequestRepos.findAll({
-  //   where: {
-  //     status: "approved",
-  //     start_date: {
-  //       [Op.gte]: range2?.startDate,
-  //       [Op.lt]: range2?.endDate,
-  //     },
-  //   },
-  //   attributes: [
-  //     "employee_id",
-  //     [sequelize.fn("SUM", sequelize.col("total_days")), "total_leave"],
-  //   ],
-  //   include: [
-  //     {
-  //       model: employeeRepos,
-  //       as: "employee",
-  //       attributes: ["first_name", "last_name", "email"],
-  //     },
-  //   ],
-  //   group: ["employee_id", "employee.id"],
-  //   order: [[sequelize.literal("total_leave"), "DESC"]],
-  //   raw: false,
-  // });
 
   res.status(STATUS_CODE.OK).json({
     status: true,
