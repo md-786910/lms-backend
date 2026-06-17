@@ -113,11 +113,6 @@ const getDashboard = catchAsync(async (req, res, next) => {
           "department_id",
         ],
       },
-      {
-        model: employeLeaveRepos,
-        as: "leave_type",
-        attributes: ["id", "leave_type"],
-      },
     ],
     order: [["createdAt", "DESC"]],
     limit: 5,
@@ -127,6 +122,16 @@ const getDashboard = catchAsync(async (req, res, next) => {
     if (!request.employee) {
       continue;
     }
+    const employeeLeave = await employeLeaveRepos.findOne({
+      attributes: ["id", "leave_id", "leave_type"],
+      where: {
+        company_id,
+        employee_id: request.employee_id,
+        leave_id: request.leave_type_id,
+      },
+    });
+    request.dataValues.leave_type = employeeLeave;
+
     let prefixName = "EMP";
     const departmentId = request.employee.department_id;
     if (departmentId) {
