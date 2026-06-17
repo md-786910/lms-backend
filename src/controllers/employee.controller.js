@@ -1,4 +1,5 @@
 const { STATUS_CODE } = require("../constants/statusCode");
+const { Op } = require("sequelize");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
 const {
@@ -14,6 +15,7 @@ const {
   EmployeePersonalInformationRepos,
   employeeSalaryRepos,
   employeLeaveRepos,
+  leaveRequestRepos,
   activityRepos,
   prefixRepos,
 } = require("../repository/base");
@@ -21,6 +23,113 @@ const { generateToken } = require("../helpers/jwt");
 const eventEmitter = require("../events/eventEmitter");
 const eventObj = require("../events/events");
 const initEmployeeLeave = require("../repository/initEmployeeLeave");
+const { getYearRangeWhere, roundLeave } = require("../utils/leaveCarryForward");
+
+const parseLeaveOn = (leaveOn) => {
+  if (Array.isArray(leaveOn)) return leaveOn;
+  if (!leaveOn) return [];
+  if (typeof leaveOn === "string") {
+    try {
+      const parsed = JSON.parse(leaveOn);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+      return [];
+    }
+  }
+  return [];
+};
+
+const getYearlyLeaveDays = (leave, year) => {
+  const leaveOn = parseLeaveOn(leave.leave_on);
+  if (leaveOn.length > 0) {
+    return leaveOn.reduce((sum, day) => {
+      const dayDate = new Date(day.date);
+      if (Number.isNaN(dayDate.getTime()) || dayDate.getFullYear() !== year) {
+        return sum;
+      }
+      return sum + Number(day.count ?? (day.day === "full" ? 1 : 0.5));
+    }, 0);
+  }
+
+  const startDate = new Date(leave.start_date);
+  if (Number.isNaN(startDate.getTime()) || startDate.getFullYear() !== year) {
+    return 0;
+  }
+
+  return Number(leave.total_days || 0);
+};
+
+const getCurrentCycleInfo = (date = new Date()) => {
+  const year = date.getFullYear();
+  const isFirstCycle = date.getMonth() < 6;
+  const cycleStartMonth = isFirstCycle ? 0 : 6;
+  const cycleEndMonth = isFirstCycle ? 5 : 11;
+
+  return {
+    year,
+    cycle: isFirstCycle ? "first" : "second",
+    cycle_label: isFirstCycle ? "Jan-Jun" : "Jul-Dec",
+    cycle_name: isFirstCycle ? "First Cycle" : "Second Cycle",
+    startDate: new Date(year, cycleStartMonth, 1),
+    endDate: new Date(year, cycleEndMonth + 1, 0, 23, 59, 59, 999),
+  };
+};
+
+const getLeaveCycleInfo = (year, cycle) => {
+  const isFirstCycle = cycle === "first";
+  const cycleStartMonth = isFirstCycle ? 0 : 6;
+  const cycleEndMonth = isFirstCycle ? 5 : 11;
+
+  return {
+    year,
+    cycle,
+    cycle_label: isFirstCycle ? "Jan-Jun" : "Jul-Dec",
+    cycle_name: isFirstCycle ? "First Cycle" : "Second Cycle",
+    startDate: new Date(year, cycleStartMonth, 1),
+    endDate: new Date(year, cycleEndMonth + 1, 0, 23, 59, 59, 999),
+  };
+};
+
+const getLeaveOverlapWhere = (range) => ({
+  [Op.or]: [
+    { start_date: { [Op.between]: [range.startDate, range.endDate] } },
+    { end_date: { [Op.between]: [range.startDate, range.endDate] } },
+    {
+      [Op.and]: [
+        { start_date: { [Op.lte]: range.startDate } },
+        { end_date: { [Op.gte]: range.endDate } },
+      ],
+    },
+  ],
+});
+
+const getLeaveDaysInsideRange = (leave, range) => {
+  const leaveOn = parseLeaveOn(leave.leave_on);
+  if (leaveOn.length > 0) {
+    return leaveOn.reduce((sum, day) => {
+      const dayDate = new Date(day.date);
+      if (
+        Number.isNaN(dayDate.getTime()) ||
+        dayDate < range.startDate ||
+        dayDate > range.endDate
+      ) {
+        return sum;
+      }
+      return sum + Number(day.count ?? (day.day === "full" ? 1 : 0.5));
+    }, 0);
+  }
+
+  const startDate = new Date(leave.start_date);
+  if (
+    Number.isNaN(startDate.getTime()) ||
+    startDate < range.startDate ||
+    startDate > range.endDate
+  ) {
+    return 0;
+  }
+
+  return Number(leave.total_days || 0);
+};
 
 const createEmployee = catchAsync(async (req, res, next) => {
   const { company_id, country_id = 91 } = req.user;
@@ -186,6 +295,26 @@ const getAllEmployees = catchAsync(async (req, res, next) => {
     order: [["createdAt", "DESC"]],
   });
 
+  const currentYear = new Date().getFullYear();
+  const employeeIds = employees.map((employee) => employee.id);
+  const approvedYearlyLeaves =
+    employeeIds.length > 0
+      ? await leaveRequestRepos.findAll({
+          where: {
+            company_id,
+            employee_id: employeeIds,
+            status: "approved",
+            ...getYearRangeWhere(currentYear),
+          },
+        })
+      : [];
+  const yearlyUsedByEmployee = approvedYearlyLeaves.reduce((acc, leave) => {
+    const employeeId = Number(leave.employee_id);
+    acc[employeeId] =
+      (acc[employeeId] || 0) + getYearlyLeaveDays(leave, currentYear);
+    return acc;
+  }, {});
+
   for (const key in employees) {
     const department_id = employees[key].department_id;
     let prefix = await prefixRepos.findOne({
@@ -197,6 +326,17 @@ const getAllEmployees = catchAsync(async (req, res, next) => {
     });
     prefix = prefix?.name ?? "EMP";
     employees[key].employee_no = `${prefix}-${employees[key].id}`;
+    const yearlyTotal = (employees[key].employee_leaves || []).reduce(
+      (sum, leave) => sum + Number(leave.leave_count || 0),
+      0
+    );
+    const yearlyUsed = roundLeave(yearlyUsedByEmployee[employees[key].id] || 0);
+    employees[key].dataValues.yearly_leave_summary = {
+      year: currentYear,
+      total: roundLeave(yearlyTotal),
+      used: yearlyUsed,
+      remaining: roundLeave(Math.max(0, yearlyTotal - yearlyUsed)),
+    };
   }
 
   res.status(STATUS_CODE.OK).json({
@@ -770,10 +910,154 @@ const getLeaveById = catchAsync(async (req, res, next) => {
     where: { employee_id: id, company_id },
     order: [["id", "ASC"]],
   });
+
+  const currentYear = new Date().getFullYear();
+  const cycleInfo = getCurrentCycleInfo();
+  const firstCycleInfo = getLeaveCycleInfo(currentYear, "first");
+  const secondCycleInfo = getLeaveCycleInfo(currentYear, "second");
+  const yearlyTotal = employeeLeave.reduce(
+    (sum, leave) => sum + Number(leave.leave_count || 0),
+    0
+  );
+  const cycleTotal = employeeLeave.reduce(
+    (sum, leave) => sum + Number(leave.leave_count || 0) / 2,
+    0
+  );
+
+  const [
+    approvedYearlyLeaves,
+    approvedCurrentCycleLeaves,
+    approvedFirstCycleLeaves,
+    approvedSecondCycleLeaves,
+  ] = await Promise.all([
+    leaveRequestRepos.findAll({
+      where: {
+        company_id,
+        employee_id: id,
+        status: "approved",
+        ...getYearRangeWhere(currentYear),
+      },
+    }),
+    leaveRequestRepos.findAll({
+      where: {
+        company_id,
+        employee_id: id,
+        status: "approved",
+        ...getLeaveOverlapWhere(cycleInfo),
+      },
+    }),
+    leaveRequestRepos.findAll({
+      where: {
+        company_id,
+        employee_id: id,
+        status: "approved",
+        ...getLeaveOverlapWhere(firstCycleInfo),
+      },
+    }),
+    leaveRequestRepos.findAll({
+      where: {
+        company_id,
+        employee_id: id,
+        status: "approved",
+        ...getLeaveOverlapWhere(secondCycleInfo),
+      },
+    }),
+  ]);
+
+  const yearlyUsed = roundLeave(
+    approvedYearlyLeaves.reduce(
+      (sum, leave) => sum + getYearlyLeaveDays(leave, currentYear),
+      0
+    )
+  );
+  const cycleUsed = roundLeave(
+    approvedCurrentCycleLeaves.reduce(
+      (sum, leave) => sum + getLeaveDaysInsideRange(leave, cycleInfo),
+      0
+    )
+  );
+  const yearlyUsedByLeaveId = approvedYearlyLeaves.reduce((acc, leave) => {
+    const leaveTypeId = Number(leave.leave_type_id);
+    acc[leaveTypeId] =
+      (acc[leaveTypeId] || 0) + getYearlyLeaveDays(leave, currentYear);
+    return acc;
+  }, {});
+  const firstCycleUsedByLeaveId = approvedFirstCycleLeaves.reduce((acc, leave) => {
+    const leaveTypeId = Number(leave.leave_type_id);
+    acc[leaveTypeId] =
+      (acc[leaveTypeId] || 0) + getLeaveDaysInsideRange(leave, firstCycleInfo);
+    return acc;
+  }, {});
+  const secondCycleUsedByLeaveId = approvedSecondCycleLeaves.reduce((acc, leave) => {
+    const leaveTypeId = Number(leave.leave_type_id);
+    acc[leaveTypeId] =
+      (acc[leaveTypeId] || 0) + getLeaveDaysInsideRange(leave, secondCycleInfo);
+    return acc;
+  }, {});
+
+  employeeLeave.forEach((leave) => {
+    const leaveId = Number(leave.leave_id);
+    const annualTotal = Number(leave.leave_count || 0);
+    const yearlyUsedForType = roundLeave(yearlyUsedByLeaveId[leaveId] || 0);
+    const cycleTotalForType = roundLeave(annualTotal / 2);
+    const firstCycleUsedForType = roundLeave(firstCycleUsedByLeaveId[leaveId] || 0);
+    const secondCycleUsedForType = roundLeave(secondCycleUsedByLeaveId[leaveId] || 0);
+    const isFirstCurrentCycle = cycleInfo.cycle === "first";
+    const cycleUsedForType = isFirstCurrentCycle
+      ? firstCycleUsedForType
+      : secondCycleUsedForType;
+
+    leave.dataValues.yearly_total = roundLeave(annualTotal);
+    leave.dataValues.yearly_used = yearlyUsedForType;
+    leave.dataValues.yearly_remaining = roundLeave(
+      Math.max(0, annualTotal - yearlyUsedForType)
+    );
+    leave.dataValues.cycle_total = cycleTotalForType;
+    leave.dataValues.cycle_used = cycleUsedForType;
+    leave.dataValues.cycle_remaining = roundLeave(
+      Math.max(0, cycleTotalForType - cycleUsedForType)
+    );
+    leave.dataValues.cycle = cycleInfo.cycle;
+    leave.dataValues.cycle_label = cycleInfo.cycle_label;
+    leave.dataValues.cycle_name = cycleInfo.cycle_name;
+    leave.dataValues.first_cycle_total = cycleTotalForType;
+    leave.dataValues.first_cycle_used = firstCycleUsedForType;
+    leave.dataValues.first_cycle_remaining = roundLeave(
+      Math.max(0, cycleTotalForType - firstCycleUsedForType)
+    );
+    leave.dataValues.first_cycle_label = firstCycleInfo.cycle_label;
+    leave.dataValues.first_cycle_name = firstCycleInfo.cycle_name;
+    leave.dataValues.second_cycle_total = cycleTotalForType;
+    leave.dataValues.second_cycle_used = secondCycleUsedForType;
+    leave.dataValues.second_cycle_remaining = roundLeave(
+      Math.max(0, cycleTotalForType - secondCycleUsedForType)
+    );
+    leave.dataValues.second_cycle_label = secondCycleInfo.cycle_label;
+    leave.dataValues.second_cycle_name = secondCycleInfo.cycle_name;
+  });
+
+  const yearly_leave_summary = {
+    year: currentYear,
+    total: roundLeave(yearlyTotal),
+    used: yearlyUsed,
+    remaining: roundLeave(Math.max(0, yearlyTotal - yearlyUsed)),
+  };
+  const cycle_leave_summary = {
+    year: cycleInfo.year,
+    cycle: cycleInfo.cycle,
+    cycle_label: cycleInfo.cycle_label,
+    cycle_name: cycleInfo.cycle_name,
+    total: roundLeave(cycleTotal),
+    used: cycleUsed,
+    remaining: roundLeave(Math.max(0, cycleTotal - cycleUsed)),
+  };
+
   res.status(STATUS_CODE.OK).json({
     success: true,
     message: "Employee leave fetched successfully",
     data: employeeLeave,
+    yearly_leave_summary,
+    cycle_leave_summary,
   });
 });
 
