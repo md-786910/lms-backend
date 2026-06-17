@@ -11,9 +11,12 @@ const {
 } = require("../../repository/base");
 const AppError = require("../../utils/appError");
 const catchAsync = require("../../utils/catchAsync");
-
-const roundLeave = (value) =>
-  Math.round((Number(value || 0) + Number.EPSILON) * 100) / 100;
+const {
+  buildMonthlyLeaveMap,
+  calculatePolicyMonths,
+  getYearRangeWhere,
+  roundLeave,
+} = require("../../utils/leaveCarryForward");
 
 const parseLeaveOn = (leaveOn) => {
   if (Array.isArray(leaveOn)) return leaveOn;
@@ -76,6 +79,37 @@ const getLeaveDaysInsideRange = (leave, range) => {
   return Number(leave.total_days || 0);
 };
 
+const getCycleStatsFromMonthlyAvailed = ({
+  annualTotal,
+  monthlyAvailed,
+  startMonth,
+  endMonth,
+}) => {
+  const monthResults = calculatePolicyMonths({
+    monthlyAvailed,
+    annualDays: annualTotal,
+    startMonth,
+    endMonth,
+  });
+  const cycleMonths = monthResults.slice(startMonth, endMonth + 1);
+  const used = cycleMonths.reduce(
+    (sum, month) => sum + Number(month.availed || 0),
+    0
+  );
+  const deduction = cycleMonths.reduce(
+    (sum, month) => sum + Number(month.deduction || 0),
+    0
+  );
+  const lastMonth = cycleMonths[cycleMonths.length - 1] || {};
+
+  return {
+    total: roundLeave(Number(annualTotal || 0) / 2),
+    used: roundLeave(used),
+    deduction: roundLeave(deduction),
+    remaining: roundLeave(Number(lastMonth.remaining || 0)),
+  };
+};
+
 const getAllLeave = catchAsync(async (req, res, next) => {
   const { id, company_id } = req.user;
   const cycleInfo = getCurrentCycleInfo();
@@ -83,41 +117,36 @@ const getAllLeave = catchAsync(async (req, res, next) => {
     where: { employee_id: id, company_id },
   });
 
-  const approvedCycleRequests = await leaveRequestRepos.findAll({
+  const approvedYearlyRequests = await leaveRequestRepos.findAll({
     where: {
       company_id,
       employee_id: id,
       status: "approved",
-      [db.Sequelize.Op.or]: [
-        { start_date: { [db.Sequelize.Op.between]: [cycleInfo.startDate, cycleInfo.endDate] } },
-        { end_date: { [db.Sequelize.Op.between]: [cycleInfo.startDate, cycleInfo.endDate] } },
-        {
-          [db.Sequelize.Op.and]: [
-            { start_date: { [db.Sequelize.Op.lte]: cycleInfo.startDate } },
-            { end_date: { [db.Sequelize.Op.gte]: cycleInfo.endDate } },
-          ],
-        },
-      ],
+      ...getYearRangeWhere(cycleInfo.year),
     },
   });
-
-  const cycleUsedByLeaveId = approvedCycleRequests.reduce((acc, leave) => {
-    const leaveTypeId = Number(leave.leave_type_id);
-    acc[leaveTypeId] =
-      (acc[leaveTypeId] || 0) + getLeaveDaysInsideRange(leave, cycleInfo);
-    return acc;
-  }, {});
+  const monthlyByEmployeeAndType = buildMonthlyLeaveMap(
+    approvedYearlyRequests,
+    cycleInfo.year
+  );
+  const monthlyByType = monthlyByEmployeeAndType[Number(id)] || {};
+  const cycleStartMonth = cycleInfo.cycle_start_month - 1;
+  const cycleEndMonth = cycleInfo.cycle_end_month - 1;
 
   const cycleLeaves = leaves.map((leave) => {
-    const cycleLeaveCount = roundLeave(Number(leave.leave_count || 0) / 2);
-    const cycleLeaveUsed = roundLeave(cycleUsedByLeaveId[leave.leave_id] || 0);
-    const cycleLeaveRemaining = roundLeave(
-      Math.max(0, cycleLeaveCount - cycleLeaveUsed)
-    );
+    const monthlyAvailed =
+      monthlyByType[Number(leave.leave_id)] || Array(12).fill(0);
+    const cycleStats = getCycleStatsFromMonthlyAvailed({
+      annualTotal: Number(leave.leave_count || 0),
+      monthlyAvailed,
+      startMonth: cycleStartMonth,
+      endMonth: cycleEndMonth,
+    });
 
-    leave.dataValues.cycle_leave_count = cycleLeaveCount;
-    leave.dataValues.cycle_leave_used = cycleLeaveUsed;
-    leave.dataValues.cycle_leave_remaining = cycleLeaveRemaining;
+    leave.dataValues.cycle_leave_count = cycleStats.total;
+    leave.dataValues.cycle_leave_used = cycleStats.used;
+    leave.dataValues.cycle_leave_remaining = cycleStats.remaining;
+    leave.dataValues.cycle_leave_deduction = cycleStats.deduction;
     leave.dataValues.cycle = cycleInfo.cycle;
     leave.dataValues.cycle_label = cycleInfo.cycle_label;
     leave.dataValues.cycle_name = cycleInfo.cycle_name;
@@ -133,6 +162,9 @@ const getAllLeave = catchAsync(async (req, res, next) => {
   }, 0);
   const cycle_remaining = cycleLeaves.reduce((sum, leave) => {
     return sum + Number(leave.dataValues.cycle_leave_remaining || 0);
+  }, 0);
+  const cycle_deduction = cycleLeaves.reduce((sum, leave) => {
+    return sum + Number(leave.dataValues.cycle_leave_deduction || 0);
   }, 0);
 
   let total_pending = await leaveRequestRepos.findAll({
@@ -169,6 +201,7 @@ const getAllLeave = catchAsync(async (req, res, next) => {
       cycle_total: roundLeave(cycle_total),
       cycle_used: roundLeave(cycle_used),
       cycle_remaining: roundLeave(cycle_remaining),
+      cycle_deduction: roundLeave(cycle_deduction),
       leaves: cycleLeaves,
       total_approved: roundLeave(cycle_used),
       total_pending: roundLeave(total_pending),

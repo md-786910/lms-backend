@@ -378,7 +378,9 @@ const recomputeEmployeeYearlyLeaveSummaryRecords = async ({
 
 module.exports = {
   MONTH_NAMES,
+  buildMonthlyLeaveMap,
   buildLeaveMonthlySummaryRecords,
+  calculatePolicyMonths,
   getYearRangeWhere,
   recomputeEmployeeLeaveBalance,
   recomputeEmployeeYearlyLeaveSummaryRecords,
