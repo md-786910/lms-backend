@@ -92,21 +92,20 @@ const getCycleStatsFromMonthlyAvailed = ({
     endMonth,
   });
   const cycleMonths = monthResults.slice(startMonth, endMonth + 1);
-  const used = cycleMonths.reduce(
+  const availed = cycleMonths.reduce(
     (sum, month) => sum + Number(month.availed || 0),
     0
   );
-  const deduction = cycleMonths.reduce(
-    (sum, month) => sum + Number(month.deduction || 0),
-    0
-  );
-  const lastMonth = cycleMonths[cycleMonths.length - 1] || {};
+  const total = roundLeave(Number(annualTotal || 0) / 2);
+  const used = roundLeave(Math.min(availed, total));
+  const deduction = roundLeave(Math.max(0, availed - total));
 
   return {
-    total: roundLeave(Number(annualTotal || 0) / 2),
-    used: roundLeave(used),
-    deduction: roundLeave(deduction),
-    remaining: roundLeave(Number(lastMonth.remaining || 0)),
+    total,
+    availed: roundLeave(availed),
+    used,
+    deduction,
+    remaining: roundLeave(Math.max(0, total - used)),
   };
 };
 

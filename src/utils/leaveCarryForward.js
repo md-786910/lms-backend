@@ -279,9 +279,10 @@ const recomputeEmployeeLeaveBalance = async ({
       .slice(cycleStartMonth, currentMonth + 1)
       .reduce((sum, value) => sum + Number(value || 0), 0);
     const cycleEntitlement = Number(employeeLeave.leave_count || 0) / 2;
+    const policyUsed = Math.min(leaveUsed, cycleEntitlement);
 
-    employeeLeave.leave_remaing = roundLeave(Math.max(0, cycleEntitlement - leaveUsed));
-    employeeLeave.leave_used = roundLeave(leaveUsed);
+    employeeLeave.leave_remaing = roundLeave(Math.max(0, cycleEntitlement - policyUsed));
+    employeeLeave.leave_used = roundLeave(policyUsed);
     await employeeLeave.save({ transaction });
   }
 };
