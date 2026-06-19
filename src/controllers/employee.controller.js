@@ -24,8 +24,8 @@ const eventEmitter = require("../events/eventEmitter");
 const eventObj = require("../events/events");
 const initEmployeeLeave = require("../repository/initEmployeeLeave");
 const {
+  buildAggregateLeaveStats,
   buildMonthlyLeaveMap,
-  calculatePolicyMonths,
   getYearRangeWhere,
   roundLeave,
 } = require("../utils/leaveCarryForward");
@@ -64,22 +64,6 @@ const getYearlyLeaveDays = (leave, year) => {
   return Number(leave.total_days || 0);
 };
 
-const getCurrentCycleInfo = (date = new Date()) => {
-  const year = date.getFullYear();
-  const isFirstCycle = date.getMonth() < 6;
-  const cycleStartMonth = isFirstCycle ? 0 : 6;
-  const cycleEndMonth = isFirstCycle ? 5 : 11;
-
-  return {
-    year,
-    cycle: isFirstCycle ? "first" : "second",
-    cycle_label: isFirstCycle ? "Jan-Jun" : "Jul-Dec",
-    cycle_name: isFirstCycle ? "First Cycle" : "Second Cycle",
-    startDate: new Date(year, cycleStartMonth, 1),
-    endDate: new Date(year, cycleEndMonth + 1, 0, 23, 59, 59, 999),
-  };
-};
-
 const getLeaveCycleInfo = (year, cycle) => {
   const isFirstCycle = cycle === "first";
   const cycleStartMonth = isFirstCycle ? 0 : 6;
@@ -92,36 +76,6 @@ const getLeaveCycleInfo = (year, cycle) => {
     cycle_name: isFirstCycle ? "First Cycle" : "Second Cycle",
     startDate: new Date(year, cycleStartMonth, 1),
     endDate: new Date(year, cycleEndMonth + 1, 0, 23, 59, 59, 999),
-  };
-};
-
-const getCycleStatsFromMonthlyAvailed = ({
-  annualTotal,
-  monthlyAvailed,
-  startMonth,
-  endMonth,
-}) => {
-  const monthResults = calculatePolicyMonths({
-    monthlyAvailed,
-    annualDays: annualTotal,
-    startMonth,
-    endMonth,
-  });
-  const cycleMonths = monthResults.slice(startMonth, endMonth + 1);
-  const availed = cycleMonths.reduce(
-    (sum, month) => sum + Number(month.availed || 0),
-    0
-  );
-  const total = roundLeave(Number(annualTotal || 0) / 2);
-  const used = roundLeave(Math.min(availed, total));
-  const deduction = roundLeave(Math.max(0, availed - total));
-
-  return {
-    total,
-    availed: roundLeave(availed),
-    used,
-    deduction,
-    remaining: roundLeave(Math.max(0, total - used)),
   };
 };
 
@@ -906,17 +860,8 @@ const getLeaveById = catchAsync(async (req, res, next) => {
   });
 
   const currentYear = new Date().getFullYear();
-  const cycleInfo = getCurrentCycleInfo();
   const firstCycleInfo = getLeaveCycleInfo(currentYear, "first");
   const secondCycleInfo = getLeaveCycleInfo(currentYear, "second");
-  const firstCycleStartMonth = 0;
-  const firstCycleEndMonth = 5;
-  const secondCycleStartMonth = 6;
-  const secondCycleEndMonth = 11;
-  const yearlyTotal = employeeLeave.reduce(
-    (sum, leave) => sum + Number(leave.leave_count || 0),
-    0
-  );
 
   const approvedYearlyLeaves = await leaveRequestRepos.findAll({
     where: {
@@ -932,97 +877,80 @@ const getLeaveById = catchAsync(async (req, res, next) => {
   );
   const monthlyByType = monthlyByEmployeeAndType[Number(id)] || {};
 
-  let yearlyUsed = 0;
-  let yearlyRemaining = 0;
-  let yearlyDeduction = 0;
-  let currentCycleTotal = 0;
-  let currentCycleUsed = 0;
-  let currentCycleRemaining = 0;
-  let currentCycleDeduction = 0;
+  const aggregateStats = buildAggregateLeaveStats({
+    employee_id: id,
+    employeeLeaves: employeeLeave,
+    leaveRequests: approvedYearlyLeaves,
+    year: currentYear,
+  });
 
   employeeLeave.forEach((leave) => {
     const leaveId = Number(leave.leave_id);
     const annualTotal = Number(leave.leave_count || 0);
     const monthlyAvailed = monthlyByType[leaveId] || Array(12).fill(0);
-    const firstCycleStats = getCycleStatsFromMonthlyAvailed({
-      annualTotal,
-      monthlyAvailed,
-      startMonth: firstCycleStartMonth,
-      endMonth: firstCycleEndMonth,
-    });
-    const secondCycleStats = getCycleStatsFromMonthlyAvailed({
-      annualTotal,
-      monthlyAvailed,
-      startMonth: secondCycleStartMonth,
-      endMonth: secondCycleEndMonth,
-    });
-    const isFirstCurrentCycle = cycleInfo.cycle === "first";
-    const currentCycleStats = isFirstCurrentCycle
-      ? firstCycleStats
-      : secondCycleStats;
+    const firstCycleAvailed = roundLeave(
+      monthlyAvailed
+        .slice(firstCycleInfo.startDate.getMonth(), firstCycleInfo.endDate.getMonth() + 1)
+        .reduce((sum, value) => sum + Number(value || 0), 0)
+    );
+    const secondCycleAvailed = roundLeave(
+      monthlyAvailed
+        .slice(secondCycleInfo.startDate.getMonth(), secondCycleInfo.endDate.getMonth() + 1)
+        .reduce((sum, value) => sum + Number(value || 0), 0)
+    );
+    const currentCycleAvailed =
+      aggregateStats.cycle === "first" ? firstCycleAvailed : secondCycleAvailed;
     const yearlyAvailedForType = roundLeave(
-      firstCycleStats.availed + secondCycleStats.availed
+      firstCycleAvailed + secondCycleAvailed
     );
-    const yearlyUsedForType = roundLeave(
-      Math.min(yearlyAvailedForType, annualTotal)
-    );
-    const yearlyRemainingForType = roundLeave(
-      Math.max(0, annualTotal - yearlyUsedForType)
-    );
-    const yearlyDeductionForType = roundLeave(
-      Math.max(0, yearlyAvailedForType - annualTotal)
-    );
-
-    yearlyUsed += yearlyUsedForType;
-    yearlyRemaining += yearlyRemainingForType;
-    yearlyDeduction += yearlyDeductionForType;
-    currentCycleTotal += currentCycleStats.total;
-    currentCycleUsed += currentCycleStats.used;
-    currentCycleRemaining += currentCycleStats.remaining;
-    currentCycleDeduction += currentCycleStats.deduction;
 
     leave.dataValues.yearly_total = roundLeave(annualTotal);
     leave.dataValues.yearly_availed = yearlyAvailedForType;
-    leave.dataValues.yearly_used = yearlyUsedForType;
-    leave.dataValues.yearly_remaining = yearlyRemainingForType;
-    leave.dataValues.yearly_deduction = yearlyDeductionForType;
-    leave.dataValues.cycle_total = currentCycleStats.total;
-    leave.dataValues.cycle_used = currentCycleStats.used;
-    leave.dataValues.cycle_remaining = currentCycleStats.remaining;
-    leave.dataValues.cycle_deduction = currentCycleStats.deduction;
-    leave.dataValues.cycle = cycleInfo.cycle;
-    leave.dataValues.cycle_label = cycleInfo.cycle_label;
-    leave.dataValues.cycle_name = cycleInfo.cycle_name;
-    leave.dataValues.first_cycle_total = firstCycleStats.total;
-    leave.dataValues.first_cycle_used = firstCycleStats.used;
-    leave.dataValues.first_cycle_remaining = firstCycleStats.remaining;
-    leave.dataValues.first_cycle_deduction = firstCycleStats.deduction;
+    leave.dataValues.yearly_used = yearlyAvailedForType;
+    leave.dataValues.yearly_remaining = null;
+    leave.dataValues.yearly_deduction = null;
+    leave.dataValues.cycle_total = null;
+    leave.dataValues.cycle_availed = currentCycleAvailed;
+    leave.dataValues.cycle_used = currentCycleAvailed;
+    leave.dataValues.cycle_remaining = null;
+    leave.dataValues.cycle_deduction = null;
+    leave.dataValues.cycle = aggregateStats.cycle;
+    leave.dataValues.cycle_label = aggregateStats.cycle_label;
+    leave.dataValues.cycle_name = aggregateStats.cycle_name;
+    leave.dataValues.first_cycle_total = null;
+    leave.dataValues.first_cycle_availed = firstCycleAvailed;
+    leave.dataValues.first_cycle_used = firstCycleAvailed;
+    leave.dataValues.first_cycle_remaining = null;
+    leave.dataValues.first_cycle_deduction = null;
     leave.dataValues.first_cycle_label = firstCycleInfo.cycle_label;
     leave.dataValues.first_cycle_name = firstCycleInfo.cycle_name;
-    leave.dataValues.second_cycle_total = secondCycleStats.total;
-    leave.dataValues.second_cycle_used = secondCycleStats.used;
-    leave.dataValues.second_cycle_remaining = secondCycleStats.remaining;
-    leave.dataValues.second_cycle_deduction = secondCycleStats.deduction;
+    leave.dataValues.second_cycle_total = null;
+    leave.dataValues.second_cycle_availed = secondCycleAvailed;
+    leave.dataValues.second_cycle_used = secondCycleAvailed;
+    leave.dataValues.second_cycle_remaining = null;
+    leave.dataValues.second_cycle_deduction = null;
     leave.dataValues.second_cycle_label = secondCycleInfo.cycle_label;
     leave.dataValues.second_cycle_name = secondCycleInfo.cycle_name;
   });
 
   const yearly_leave_summary = {
     year: currentYear,
-    total: roundLeave(yearlyTotal),
-    used: roundLeave(yearlyUsed),
-    remaining: roundLeave(yearlyRemaining),
-    deduction: roundLeave(yearlyDeduction),
+    total: aggregateStats.yearly.total,
+    availed: aggregateStats.yearly.availed,
+    used: aggregateStats.yearly.used,
+    remaining: aggregateStats.yearly.remaining,
+    deduction: aggregateStats.yearly.deduction,
   };
   const cycle_leave_summary = {
-    year: cycleInfo.year,
-    cycle: cycleInfo.cycle,
-    cycle_label: cycleInfo.cycle_label,
-    cycle_name: cycleInfo.cycle_name,
-    total: roundLeave(currentCycleTotal),
-    used: roundLeave(currentCycleUsed),
-    remaining: roundLeave(currentCycleRemaining),
-    deduction: roundLeave(currentCycleDeduction),
+    year: aggregateStats.year,
+    cycle: aggregateStats.cycle,
+    cycle_label: aggregateStats.cycle_label,
+    cycle_name: aggregateStats.cycle_name,
+    total: aggregateStats.currentCycle.total,
+    availed: aggregateStats.currentCycle.availed,
+    used: aggregateStats.currentCycle.used,
+    remaining: aggregateStats.currentCycle.remaining,
+    deduction: aggregateStats.currentCycle.deduction,
   };
 
   res.status(STATUS_CODE.OK).json({

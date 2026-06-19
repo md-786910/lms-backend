@@ -99,11 +99,13 @@ const calculatePolicyMonths = ({
     const availed = Number(monthlyAvailed?.[monthIndex] || 0);
     const available = monthlyEntitlement + carriedForward;
     const deduction = Math.max(0, availed - available);
+    const used = availed - deduction;
     const remaining = Math.max(0, available - availed);
 
     monthResults[monthIndex] = {
       availed: roundLeave(availed),
       available: roundLeave(available),
+      used: roundLeave(used),
       deduction: roundLeave(deduction),
       remaining: roundLeave(remaining),
       monthly_entitlement: roundLeave(monthlyEntitlement),
@@ -129,6 +131,83 @@ const buildEmployeeMonthlyAvailedMap = (leaveRequests, year) => {
   }
 
   return monthlyByEmployee;
+};
+
+const getPeriodLeaveStats = ({ monthResults, startMonth, endMonth, total }) => {
+  const months = monthResults.slice(startMonth, endMonth + 1);
+  const availed = months.reduce(
+    (sum, month) => sum + Number(month.availed || 0),
+    0
+  );
+  const used = months.reduce((sum, month) => sum + Number(month.used || 0), 0);
+  const deduction = months.reduce(
+    (sum, month) => sum + Number(month.deduction || 0),
+    0
+  );
+  const lastMonth = months[months.length - 1] || {};
+
+  return {
+    total: roundLeave(total),
+    availed: roundLeave(availed),
+    used: roundLeave(used),
+    deduction: roundLeave(deduction),
+    remaining: roundLeave(Number(lastMonth.remaining || 0)),
+  };
+};
+
+const buildAggregateLeaveStats = ({
+  employee_id,
+  employeeLeaves,
+  leaveRequests,
+  year,
+  asOfDate = new Date(),
+}) => {
+  const employeeId = Number(employee_id);
+  const annualTotal = employeeLeaves.reduce(
+    (sum, leave) => sum + Number(leave.leave_count || 0),
+    0
+  );
+  const monthlyByEmployee = buildEmployeeMonthlyAvailedMap(leaveRequests, year);
+  const monthlyAvailed = monthlyByEmployee[employeeId] || Array(12).fill(0);
+  const monthResults = calculatePolicyMonths({
+    monthlyAvailed,
+    annualDays: annualTotal,
+  });
+  const currentMonth = new Date(asOfDate).getMonth();
+  const isFirstCycle = currentMonth < 6;
+  const firstCycle = getPeriodLeaveStats({
+    monthResults,
+    startMonth: 0,
+    endMonth: 5,
+    total: annualTotal / 2,
+  });
+  const secondCycle = getPeriodLeaveStats({
+    monthResults,
+    startMonth: 6,
+    endMonth: 11,
+    total: annualTotal / 2,
+  });
+
+  return {
+    year,
+    monthlyAvailed,
+    monthResults,
+    yearly: {
+      total: roundLeave(annualTotal),
+      availed: roundLeave(firstCycle.availed + secondCycle.availed),
+      used: roundLeave(firstCycle.used + secondCycle.used),
+      deduction: roundLeave(firstCycle.deduction + secondCycle.deduction),
+      remaining: roundLeave(firstCycle.remaining + secondCycle.remaining),
+    },
+    firstCycle,
+    secondCycle,
+    currentCycle: isFirstCycle ? firstCycle : secondCycle,
+    cycle: isFirstCycle ? "first" : "second",
+    cycle_label: isFirstCycle ? "Jan-Jun" : "Jul-Dec",
+    cycle_name: isFirstCycle ? "First Cycle" : "Second Cycle",
+    cycle_start_month: isFirstCycle ? 1 : 7,
+    cycle_end_month: isFirstCycle ? 6 : 12,
+  };
 };
 
 const buildLeaveMonthlySummaryRecords = ({ employees, employeeLeaves, leaveRequests, year, prefixByDepartment = {} }) => {
@@ -379,6 +458,7 @@ const recomputeEmployeeYearlyLeaveSummaryRecords = async ({
 
 module.exports = {
   MONTH_NAMES,
+  buildAggregateLeaveStats,
   buildMonthlyLeaveMap,
   buildLeaveMonthlySummaryRecords,
   calculatePolicyMonths,

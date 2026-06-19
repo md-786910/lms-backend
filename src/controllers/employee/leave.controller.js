@@ -12,8 +12,8 @@ const {
 const AppError = require("../../utils/appError");
 const catchAsync = require("../../utils/catchAsync");
 const {
+  buildAggregateLeaveStats,
   buildMonthlyLeaveMap,
-  calculatePolicyMonths,
   getYearRangeWhere,
   roundLeave,
 } = require("../../utils/leaveCarryForward");
@@ -79,36 +79,6 @@ const getLeaveDaysInsideRange = (leave, range) => {
   return Number(leave.total_days || 0);
 };
 
-const getCycleStatsFromMonthlyAvailed = ({
-  annualTotal,
-  monthlyAvailed,
-  startMonth,
-  endMonth,
-}) => {
-  const monthResults = calculatePolicyMonths({
-    monthlyAvailed,
-    annualDays: annualTotal,
-    startMonth,
-    endMonth,
-  });
-  const cycleMonths = monthResults.slice(startMonth, endMonth + 1);
-  const availed = cycleMonths.reduce(
-    (sum, month) => sum + Number(month.availed || 0),
-    0
-  );
-  const total = roundLeave(Number(annualTotal || 0) / 2);
-  const used = roundLeave(Math.min(availed, total));
-  const deduction = roundLeave(Math.max(0, availed - total));
-
-  return {
-    total,
-    availed: roundLeave(availed),
-    used,
-    deduction,
-    remaining: roundLeave(Math.max(0, total - used)),
-  };
-};
-
 const getAllLeave = catchAsync(async (req, res, next) => {
   const { id, company_id } = req.user;
   const cycleInfo = getCurrentCycleInfo();
@@ -131,40 +101,33 @@ const getAllLeave = catchAsync(async (req, res, next) => {
   const monthlyByType = monthlyByEmployeeAndType[Number(id)] || {};
   const cycleStartMonth = cycleInfo.cycle_start_month - 1;
   const cycleEndMonth = cycleInfo.cycle_end_month - 1;
+  const aggregateStats = buildAggregateLeaveStats({
+    employee_id: id,
+    employeeLeaves: leaves,
+    leaveRequests: approvedYearlyRequests,
+    year: cycleInfo.year,
+  });
 
   const cycleLeaves = leaves.map((leave) => {
     const monthlyAvailed =
       monthlyByType[Number(leave.leave_id)] || Array(12).fill(0);
-    const cycleStats = getCycleStatsFromMonthlyAvailed({
-      annualTotal: Number(leave.leave_count || 0),
-      monthlyAvailed,
-      startMonth: cycleStartMonth,
-      endMonth: cycleEndMonth,
-    });
+    const cycleAvailed = roundLeave(
+      monthlyAvailed
+        .slice(cycleStartMonth, cycleEndMonth + 1)
+        .reduce((sum, value) => sum + Number(value || 0), 0)
+    );
 
-    leave.dataValues.cycle_leave_count = cycleStats.total;
-    leave.dataValues.cycle_leave_used = cycleStats.used;
-    leave.dataValues.cycle_leave_remaining = cycleStats.remaining;
-    leave.dataValues.cycle_leave_deduction = cycleStats.deduction;
-    leave.dataValues.cycle = cycleInfo.cycle;
-    leave.dataValues.cycle_label = cycleInfo.cycle_label;
-    leave.dataValues.cycle_name = cycleInfo.cycle_name;
+    leave.dataValues.cycle_leave_count = null;
+    leave.dataValues.cycle_leave_availed = cycleAvailed;
+    leave.dataValues.cycle_leave_used = cycleAvailed;
+    leave.dataValues.cycle_leave_remaining = null;
+    leave.dataValues.cycle_leave_deduction = null;
+    leave.dataValues.cycle = aggregateStats.cycle;
+    leave.dataValues.cycle_label = aggregateStats.cycle_label;
+    leave.dataValues.cycle_name = aggregateStats.cycle_name;
 
     return leave;
   });
-
-  const cycle_total = cycleLeaves.reduce((sum, leave) => {
-    return sum + Number(leave.dataValues.cycle_leave_count || 0);
-  }, 0);
-  const cycle_used = cycleLeaves.reduce((sum, leave) => {
-    return sum + Number(leave.dataValues.cycle_leave_used || 0);
-  }, 0);
-  const cycle_remaining = cycleLeaves.reduce((sum, leave) => {
-    return sum + Number(leave.dataValues.cycle_leave_remaining || 0);
-  }, 0);
-  const cycle_deduction = cycleLeaves.reduce((sum, leave) => {
-    return sum + Number(leave.dataValues.cycle_leave_deduction || 0);
-  }, 0);
 
   let total_pending = await leaveRequestRepos.findAll({
     where: {
@@ -197,14 +160,20 @@ const getAllLeave = catchAsync(async (req, res, next) => {
       cycle_name: cycleInfo.cycle_name,
       cycle_start_month: cycleInfo.cycle_start_month,
       cycle_end_month: cycleInfo.cycle_end_month,
-      cycle_total: roundLeave(cycle_total),
-      cycle_used: roundLeave(cycle_used),
-      cycle_remaining: roundLeave(cycle_remaining),
-      cycle_deduction: roundLeave(cycle_deduction),
+      cycle_total: aggregateStats.currentCycle.total,
+      cycle_availed: aggregateStats.currentCycle.availed,
+      cycle_used: aggregateStats.currentCycle.used,
+      cycle_remaining: aggregateStats.currentCycle.remaining,
+      cycle_deduction: aggregateStats.currentCycle.deduction,
+      yearly_total: aggregateStats.yearly.total,
+      yearly_availed: aggregateStats.yearly.availed,
+      yearly_used: aggregateStats.yearly.used,
+      yearly_remaining: aggregateStats.yearly.remaining,
+      yearly_deduction: aggregateStats.yearly.deduction,
       leaves: cycleLeaves,
-      total_approved: roundLeave(cycle_used),
+      total_approved: aggregateStats.currentCycle.availed,
       total_pending: roundLeave(total_pending),
-      total_remaining: roundLeave(cycle_remaining),
+      total_remaining: aggregateStats.currentCycle.remaining,
     },
   });
 });
