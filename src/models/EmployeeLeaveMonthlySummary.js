@@ -70,14 +70,9 @@ module.exports = (sequelize, DataTypes) => {
       modelName: TABLE_MODEL_MAPPING[TABLE_NAME.EMPLOYEE_LEAVE_MONTHLY_SUMMARY],
       tableName: TABLE_NAME.EMPLOYEE_LEAVE_MONTHLY_SUMMARY,
       timestamps: true,
-      indexes: [
-        {
-          unique: true,
-          fields: ["company_id", "employee_id", "leave_id", "year", "month"],
-        },
-      ],
     }
   );
 
   return EmployeeLeaveMonthlySummary;
 };
+
