@@ -39,6 +39,12 @@ const employeeLeaveMonthlySummaryRepos =
 
 const leaveRequestRepos = db[TABLE_MODEL_MAPPING[TABLE_NAME.LEAVE_REQUEST]];
 
+const proofOfWorkSubmissionRepos =
+  db[TABLE_MODEL_MAPPING[TABLE_NAME.PROOF_OF_WORK_SUBMISSION]];
+
+const proofOfWorkAttachmentRepos =
+  db[TABLE_MODEL_MAPPING[TABLE_NAME.PROOF_OF_WORK_ATTACHMENT]];
+
 const activityRepos = db[TABLE_MODEL_MAPPING[TABLE_NAME.ACTIVITY]];
 
 const notificationRepos = db[TABLE_MODEL_MAPPING[TABLE_NAME.NOTIFICATION]];
@@ -49,6 +55,8 @@ module.exports = {
   salaryHistoryRepos,
   notificationRepos,
   activityRepos,
+  proofOfWorkSubmissionRepos,
+  proofOfWorkAttachmentRepos,
   employeLeaveRepos,
   employeeLeaveMonthlySummaryRepos,
   leaveRequestRepos,
@@ -71,3 +79,5 @@ module.exports = {
   fileRepos,
   employeeSalaryRepos,
 };
+
+

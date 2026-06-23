@@ -12,6 +12,8 @@ const TABLE_NAME = {
   EMPLOYEE_LEAVE: "employee_leaves",
   EMPLOYEE_LEAVE_MONTHLY_SUMMARY: "employee_leave_monthly_summaries",
   LEAVE_REQUEST: "leave_requests",
+  PROOF_OF_WORK_SUBMISSION: "proof_of_work_submissions",
+  PROOF_OF_WORK_ATTACHMENT: "proof_of_work_attachments",
   ACTIVITY: "activities",
 
   // Admin
@@ -44,6 +46,8 @@ const TABLE_MODEL_MAPPING = {
   [TABLE_NAME.EMPLOYEE_LEAVE]: "EmployeeLeave",
   [TABLE_NAME.EMPLOYEE_LEAVE_MONTHLY_SUMMARY]: "EmployeeLeaveMonthlySummary",
   [TABLE_NAME.LEAVE_REQUEST]: "LeaveRequest",
+  [TABLE_NAME.PROOF_OF_WORK_SUBMISSION]: "ProofOfWorkSubmission",
+  [TABLE_NAME.PROOF_OF_WORK_ATTACHMENT]: "ProofOfWorkAttachment",
   [TABLE_NAME.ACTIVITY]: "Activity",
 
   // Admin

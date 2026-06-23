@@ -18,6 +18,7 @@ const {
   companyEmployeeRoute,
   companyLeaveRoute,
   companySalaryRoute,
+  proofOfWorkRoute,
 } = require("./routes");
 const { ENV_VARIABLE } = require("./constants/env");
 const { countryRepos } = require("./repository/base");
@@ -29,6 +30,7 @@ const notificationRouter = require("./routes/notification.route");
 const Pdf = require("./config/Pdf");
 const salaryRouter = require("./routes/employee/salary.route");
 const employeeFileRouter = require("./routes/employee/file.route");
+const proofOfWorkEmployeeRouter = require("./routes/employee/proofOfWork.route");
 const adminFileRouter = require("./routes/admin.file.route");
 
 // @ App initialization
@@ -133,6 +135,7 @@ router.use("/dashboard", dashboardRoute);
 router.use("/company/employee", companyEmployeeRoute);
 router.use("/company/leave", companyLeaveRoute);
 router.use("/company/salary", companySalaryRoute);
+router.use("/company/proof-of-work", proofOfWorkRoute);
 
 // for auth
 router.use("/user", userRoute);
@@ -148,6 +151,7 @@ employeeRouter.use("/profile", profileRouter);
 employeeRouter.use("/notify", notificationRouter);
 employeeRouter.use("/employeFile", employeeFileRouter);
 employeeRouter.use("/user", userRoute);
+employeeRouter.use("/proof-of-work", proofOfWorkEmployeeRouter);
 // employeeRouter.use("/salary", leaveRouter);
 
 // Handling 404 errors
@@ -187,3 +191,4 @@ app.use((req, res, next) => {
 app.use(globalErrorHandler);
 
 module.exports = app;
+
