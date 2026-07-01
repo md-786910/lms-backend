@@ -285,6 +285,23 @@ const getAllEmployees = catchAsync(async (req, res, next) => {
       used: yearlyUsed,
       remaining: roundLeave(Math.max(0, yearlyTotal - yearlyUsed)),
     };
+    const aggregateStats = buildAggregateLeaveStats({
+      employee_id: employees[key].id,
+      employeeLeaves: employees[key].employee_leaves || [],
+      leaveRequests: approvedYearlyLeaves,
+      year: currentYear,
+    });
+    employees[key].dataValues.cycle_leave_summary = {
+      year: aggregateStats.year,
+      cycle: aggregateStats.cycle,
+      cycle_label: aggregateStats.cycle_label,
+      cycle_name: aggregateStats.cycle_name,
+      total: aggregateStats.currentCycle.total,
+      availed: aggregateStats.currentCycle.availed,
+      used: aggregateStats.currentCycle.used,
+      remaining: aggregateStats.currentCycle.remaining,
+      deduction: aggregateStats.currentCycle.deduction,
+    };
   }
 
   res.status(STATUS_CODE.OK).json({
@@ -952,6 +969,28 @@ const getLeaveById = catchAsync(async (req, res, next) => {
     remaining: aggregateStats.currentCycle.remaining,
     deduction: aggregateStats.currentCycle.deduction,
   };
+  const first_cycle_leave_summary = {
+    year: aggregateStats.year,
+    cycle: "first",
+    cycle_label: "Jan-Jun",
+    cycle_name: "First Cycle",
+    total: aggregateStats.firstCycle.total,
+    availed: aggregateStats.firstCycle.availed,
+    used: aggregateStats.firstCycle.used,
+    remaining: aggregateStats.firstCycle.remaining,
+    deduction: aggregateStats.firstCycle.deduction,
+  };
+  const second_cycle_leave_summary = {
+    year: aggregateStats.year,
+    cycle: "second",
+    cycle_label: "Jul-Dec",
+    cycle_name: "Second Cycle",
+    total: aggregateStats.secondCycle.total,
+    availed: aggregateStats.secondCycle.availed,
+    used: aggregateStats.secondCycle.used,
+    remaining: aggregateStats.secondCycle.remaining,
+    deduction: aggregateStats.secondCycle.deduction,
+  };
 
   res.status(STATUS_CODE.OK).json({
     success: true,
@@ -959,6 +998,8 @@ const getLeaveById = catchAsync(async (req, res, next) => {
     data: employeeLeave,
     yearly_leave_summary,
     cycle_leave_summary,
+    first_cycle_leave_summary,
+    second_cycle_leave_summary,
   });
 });
 
