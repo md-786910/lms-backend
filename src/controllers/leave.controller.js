@@ -23,6 +23,14 @@ const {
   recomputeEmployeeYearlyLeaveSummaryRecords,
   syncLeaveMonthlySummaryRecords,
 } = require("../utils/leaveCarryForward");
+const {
+  FLOATING_LEAVE_LABEL,
+  FLOATING_LEAVE_TYPE,
+  POLICY_LEAVE_TYPE,
+  attachFloatingLeaveType,
+  formatDateOnly,
+  validateFloatingLeaveRequest,
+} = require("../utils/floatingLeave");
 
 const getAllEmployeLeavs = catchAsync(async (req, res, next) => {
   const query = req.query;
@@ -108,15 +116,19 @@ const getAllEmployeLeavs = catchAsync(async (req, res, next) => {
       },
     });
 
-    const empLeave = await employeLeaveRepos.findOne({
-      attributes: ["id", "leave_type"],
-      where: {
-        company_id,
-        employee_id: leaves[key].employee_id,
-        leave_id: leaves[key].leave_type_id,
-      },
-    });
-    leaves[key].dataValues.leave_type = empLeave;
+    if (leaves[key].request_type === FLOATING_LEAVE_TYPE) {
+      attachFloatingLeaveType(leaves[key]);
+    } else {
+      const empLeave = await employeLeaveRepos.findOne({
+        attributes: ["id", "leave_type"],
+        where: {
+          company_id,
+          employee_id: leaves[key].employee_id,
+          leave_id: leaves[key].leave_type_id,
+        },
+      });
+      leaves[key].dataValues.leave_type = empLeave;
+    }
 
     const pref = prefix?.name ?? "EMP";
     leaves[key].employee.employee_no = `${pref}-${leaves[key].employee?.id}`;
@@ -190,41 +202,46 @@ const employeLeaveApprove = catchAsync(async (req, res, next) => {
     return next(new AppError("Leave request not found", STATUS_CODE.NOT_FOUND));
   }
 
-  // check leave available to corresponding type and update it
-  const checkLeaveAvailable = await employeLeaveRepos.findOne({
-    where: {
-      company_id,
-      employee_id,
-      leave_id: leave?.leave_type_id,
-    },
-  });
-  if (!checkLeaveAvailable) {
-    return next(new AppError("Leave type not found", STATUS_CODE.NOT_FOUND));
+  let checkLeaveAvailable = null;
+  if (leave.request_type !== FLOATING_LEAVE_TYPE) {
+    // check leave available to corresponding type and update it
+    checkLeaveAvailable = await employeLeaveRepos.findOne({
+      where: {
+        company_id,
+        employee_id,
+        leave_id: leave?.leave_type_id,
+      },
+    });
+    if (!checkLeaveAvailable) {
+      return next(new AppError("Leave type not found", STATUS_CODE.NOT_FOUND));
+    }
   }
 
   const transaction = await db.sequelize.transaction();
   try {
     leave.status = "approved";
     await leave.save({ transaction });
-    await recomputeEmployeeLeaveBalance({
-      company_id,
-      employee_id,
-      leave_id: leave.leave_type_id,
-      employeLeaveRepos,
-      leaveRequestRepos,
-      transaction,
-    });
-    await recomputeEmployeeYearlyLeaveSummaryRecords({
-      company_id,
-      employee_id,
-      leave_id: leave.leave_type_id,
-      year: new Date(leave.start_date).getFullYear(),
-      employeeRepos,
-      employeLeaveRepos,
-      leaveRequestRepos,
-      employeeLeaveMonthlySummaryRepos,
-      transaction,
-    });
+    if (leave.request_type !== FLOATING_LEAVE_TYPE) {
+      await recomputeEmployeeLeaveBalance({
+        company_id,
+        employee_id,
+        leave_id: leave.leave_type_id,
+        employeLeaveRepos,
+        leaveRequestRepos,
+        transaction,
+      });
+      await recomputeEmployeeYearlyLeaveSummaryRecords({
+        company_id,
+        employee_id,
+        leave_id: leave.leave_type_id,
+        year: new Date(leave.start_date).getFullYear(),
+        employeeRepos,
+        employeLeaveRepos,
+        leaveRequestRepos,
+        employeeLeaveMonthlySummaryRepos,
+        transaction,
+      });
+    }
     await transaction.commit();
   } catch (error) {
     await transaction.rollback();
@@ -259,7 +276,7 @@ const employeLeaveApprove = catchAsync(async (req, res, next) => {
     employee_id,
     company_id,
     leave_request_id: id,
-    leave_type: checkLeaveAvailable.leave_type,
+    leave_type: checkLeaveAvailable?.leave_type || FLOATING_LEAVE_LABEL,
   });
 
   res.status(200).json({
@@ -279,12 +296,12 @@ const getLeaveDashboard = catchAsync(async (req, res, next) => {
 
   // 1. Fetch pending requests
   const pendingRequests = await leaveRequestRepos.count({
-    where: { company_id, status: "pending" },
+    where: { company_id, status: "pending", request_type: POLICY_LEAVE_TYPE },
   });
 
   // 2. Fetch approved requests
   const approvedRequests = await leaveRequestRepos.findAll({
-    where: { company_id, status: "approved" },
+    where: { company_id, status: "approved", request_type: POLICY_LEAVE_TYPE },
     attributes: ["total_days", "start_date", "end_date"],
   });
   const approvedCount = approvedRequests.length;
@@ -332,7 +349,12 @@ const adminCreateLeaveRequest = catchAsync(async (req, res, next) => {
     reason,
     emergency_contact_person,
     status = "approved", // Admin can set status directly (approved or pending)
+    request_type = POLICY_LEAVE_TYPE,
+    festival_name,
+    festival_date,
+    justification,
   } = req.body;
+  const isFloatingLeave = request_type === FLOATING_LEAVE_TYPE;
 
   // Validate employee exists in the company
   const employee = await employeeRepos.findOne({
@@ -346,9 +368,32 @@ const adminCreateLeaveRequest = catchAsync(async (req, res, next) => {
     );
   }
 
+  let effectiveStartDate = start_date;
+  let effectiveEndDate = end_date;
+  let effectiveTotalDays = total_days;
+  let effectiveLeaveOn = leave_on;
+  let leaveType = null;
+
+  if (isFloatingLeave) {
+    const holiday = await validateFloatingLeaveRequest({
+      leaveRequestRepos,
+      company_id,
+      employee_id,
+      festival_name,
+      festival_date,
+      justification,
+    });
+    effectiveStartDate = holiday.date;
+    effectiveEndDate = holiday.date;
+    effectiveTotalDays = 1;
+    effectiveLeaveOn = JSON.stringify([
+      { date: holiday.date, type: 1, id: "Full Day", count: 1 },
+    ]);
+  }
+
   // Step 1: Parse dates
-  const start = new Date(start_date);
-  const end = new Date(end_date);
+  const start = new Date(effectiveStartDate);
+  const end = new Date(effectiveEndDate);
 
   // Step 2: Check valid date range
   if (start > end) {
@@ -365,7 +410,7 @@ const adminCreateLeaveRequest = catchAsync(async (req, res, next) => {
     where: {
       company_id,
       employee_id,
-      leave_type_id,
+      ...(isFloatingLeave ? {} : { leave_type_id }),
       [Op.or]: [
         { start_date: { [Op.between]: [start, end] } },
         { end_date: { [Op.between]: [start, end] } },
@@ -383,38 +428,40 @@ const adminCreateLeaveRequest = catchAsync(async (req, res, next) => {
   }
 
   // Step 4: Validate leave type exists
-  const leaveType = await employeLeaveRepos.findOne({
-    attributes: [
-      "id",
-      "leave_count",
-      "leave_type",
-      "leave_remaing",
-      "leave_used",
-    ],
-    where: {
-      company_id,
-      employee_id,
-      leave_id: leave_type_id,
-    },
-  });
+  if (!isFloatingLeave) {
+    leaveType = await employeLeaveRepos.findOne({
+      attributes: [
+        "id",
+        "leave_count",
+        "leave_type",
+        "leave_remaing",
+        "leave_used",
+      ],
+      where: {
+        company_id,
+        employee_id,
+        leave_id: leave_type_id,
+      },
+    });
 
-  if (!leaveType) {
-    return next(
-      new AppError(
-        "Leave type not found for this employee",
-        STATUS_CODE.NOT_FOUND
-      )
-    );
+    if (!leaveType) {
+      return next(
+        new AppError(
+          "Leave type not found for this employee",
+          STATUS_CODE.NOT_FOUND
+        )
+      );
+    }
   }
 
   // Step 5: Validate total days
   const msPerDay = 1000 * 60 * 60 * 24;
   const calculatedDays = Math.floor((end - start) / msPerDay) + 1;
 
-  if (Number(total_days) > calculatedDays) {
+  if (Number(effectiveTotalDays) > calculatedDays) {
     return next(
       new AppError(
-        `Total days (${total_days}) exceeds the date range (${calculatedDays} days)`,
+        `Total days (${effectiveTotalDays}) exceeds the date range (${calculatedDays} days)`,
         STATUS_CODE.BAD_REQUEST
       )
     );
@@ -427,11 +474,15 @@ const adminCreateLeaveRequest = catchAsync(async (req, res, next) => {
       {
         employee_id,
         company_id,
-        leave_type_id,
-        start_date,
-        end_date,
-        total_days,
-        leave_on,
+        leave_type_id: isFloatingLeave ? null : leave_type_id,
+        request_type,
+        festival_name: isFloatingLeave ? festival_name : null,
+        festival_date: isFloatingLeave ? formatDateOnly(festival_date) : null,
+        justification: isFloatingLeave ? justification : null,
+        start_date: effectiveStartDate,
+        end_date: effectiveEndDate,
+        total_days: effectiveTotalDays,
+        leave_on: effectiveLeaveOn,
         reason,
         emergency_contact_person,
         status,
@@ -440,7 +491,7 @@ const adminCreateLeaveRequest = catchAsync(async (req, res, next) => {
     );
 
     // Step 8: If status is approved, update leave balance
-    if (status === "approved") {
+    if (status === "approved" && !isFloatingLeave) {
       await recomputeEmployeeLeaveBalance({
         company_id,
         employee_id,
@@ -453,7 +504,7 @@ const adminCreateLeaveRequest = catchAsync(async (req, res, next) => {
         company_id,
         employee_id,
         leave_id: leave_type_id,
-        year: new Date(start_date).getFullYear(),
+        year: new Date(effectiveStartDate).getFullYear(),
         employeeRepos,
         employeLeaveRepos,
         leaveRequestRepos,
@@ -476,6 +527,21 @@ const adminCreateLeaveRequest = catchAsync(async (req, res, next) => {
         company_id,
         leave_request_id: leaveRequest.id,
         leave_type: leaveType.leave_type,
+      });
+    } else if (status === "approved") {
+      await activityRepos.addActivity({
+        company_id,
+        employee_id,
+        title: `Admin created approved floating leave for ${employee.first_name}`,
+        message: `${employee.first_name}'s floating leave has been approved by admin`,
+        role: "employee",
+      });
+
+      eventEmitter.emit(eventObj.APPROVED_LEAVE, {
+        employee_id,
+        company_id,
+        leave_request_id: leaveRequest.id,
+        leave_type: FLOATING_LEAVE_LABEL,
       });
     } else {
       // Add activity log for pending
@@ -516,6 +582,7 @@ const getYearlyLeaveSummary = catchAsync(async (req, res, next) => {
   let whereClause = {
     company_id,
     status: "approved",
+    request_type: POLICY_LEAVE_TYPE,
     ...getYearRangeWhere(parsedYear),
   };
 
@@ -586,6 +653,7 @@ const getYearlyLeaveSummary = catchAsync(async (req, res, next) => {
       where: {
         company_id,
         status: "approved",
+        request_type: POLICY_LEAVE_TYPE,
         ...(parsedEmployeeId && { employee_id: parsedEmployeeId }),
         [Op.or]: [
           { start_date: { [Op.between]: [monthStart, monthEnd] } },

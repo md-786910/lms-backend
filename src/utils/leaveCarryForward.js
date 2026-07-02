@@ -336,6 +336,7 @@ const recomputeEmployeeLeaveBalance = async ({
         employee_id,
         leave_type_id: employeeLeave.leave_id,
         status: "approved",
+        request_type: "policy",
         [Op.or]: [
           { start_date: { [Op.between]: [cycleStart, currentMonthEnd] } },
           { end_date: { [Op.between]: [cycleStart, currentMonthEnd] } },
@@ -418,6 +419,7 @@ const recomputeEmployeeYearlyLeaveSummaryRecords = async ({
   const leaveRequestWhere = {
     company_id,
     status: "approved",
+    request_type: "policy",
     ...getYearRangeWhere(year),
   };
   if (employee_id) {

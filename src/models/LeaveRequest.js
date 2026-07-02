@@ -31,6 +31,20 @@ module.exports = (sequelize, DataTypes) => {
       leave_type_id: {
         type: DataTypes.INTEGER,
       },
+      request_type: {
+        type: DataTypes.ENUM,
+        values: ["policy", "floating"],
+        defaultValue: "policy",
+      },
+      festival_name: {
+        type: DataTypes.STRING,
+      },
+      festival_date: {
+        type: DataTypes.DATEONLY,
+      },
+      justification: {
+        type: DataTypes.TEXT,
+      },
       start_date: {
         type: DataTypes.DATE,
       },

@@ -17,6 +17,18 @@ const {
   getYearRangeWhere,
   roundLeave,
 } = require("../../utils/leaveCarryForward");
+const {
+  FLOATING_LEAVE_LABEL,
+  FLOATING_LEAVE_TYPE,
+  POLICY_LEAVE_TYPE,
+  attachFloatingLeaveType,
+  formatDateOnly,
+  validateFloatingLeaveRequest,
+} = require("../../utils/floatingLeave");
+
+const getPolicyRequestTypeWhere = () => ({
+  request_type: POLICY_LEAVE_TYPE,
+});
 
 const parseLeaveOn = (leaveOn) => {
   if (Array.isArray(leaveOn)) return leaveOn;
@@ -91,6 +103,7 @@ const getAllLeave = catchAsync(async (req, res, next) => {
       company_id,
       employee_id: id,
       status: "approved",
+      ...getPolicyRequestTypeWhere(),
       ...getYearRangeWhere(cycleInfo.year),
     },
   });
@@ -134,6 +147,7 @@ const getAllLeave = catchAsync(async (req, res, next) => {
       company_id,
       employee_id: id,
       status: "pending",
+      ...getPolicyRequestTypeWhere(),
       [db.Sequelize.Op.or]: [
         { start_date: { [db.Sequelize.Op.between]: [cycleInfo.startDate, cycleInfo.endDate] } },
         { end_date: { [db.Sequelize.Op.between]: [cycleInfo.startDate, cycleInfo.endDate] } },
@@ -199,6 +213,10 @@ const getAllLeaveRequest = catchAsync(async (req, res, next) => {
   });
 
   for (const key in leaves) {
+    if (leaves[key].request_type === FLOATING_LEAVE_TYPE) {
+      attachFloatingLeaveType(leaves[key]);
+      continue;
+    }
     const empLeave = await employeLeaveRepos.findOne({
       attributes: ["id", "leave_id", "leave_type"],
       where: {
@@ -227,11 +245,39 @@ const createLeaveRequest = catchAsync(async (req, res, next) => {
     leave_on = [],
     reason,
     emergency_contact_person,
+    request_type = POLICY_LEAVE_TYPE,
+    festival_name,
+    festival_date,
+    justification,
   } = req.body;
+  const isFloatingLeave = request_type === FLOATING_LEAVE_TYPE;
+
+  let effectiveStartDate = start_date;
+  let effectiveEndDate = end_date;
+  let effectiveTotalDays = total_days;
+  let effectiveLeaveOn = leave_on;
+  let leave_type = FLOATING_LEAVE_LABEL;
+
+  if (isFloatingLeave) {
+    const holiday = await validateFloatingLeaveRequest({
+      leaveRequestRepos,
+      company_id,
+      employee_id,
+      festival_name,
+      festival_date,
+      justification,
+    });
+    effectiveStartDate = holiday.date;
+    effectiveEndDate = holiday.date;
+    effectiveTotalDays = 1;
+    effectiveLeaveOn = JSON.stringify([
+      { date: holiday.date, type: 1, id: "Full Day", count: 1 },
+    ]);
+  }
 
   // Step 1: Parse dates
-  const start = new Date(start_date);
-  const end = new Date(end_date);
+  const start = new Date(effectiveStartDate);
+  const end = new Date(effectiveEndDate);
 
   // Step 2: Check valid date range
   if (start > end) {
@@ -249,8 +295,8 @@ const createLeaveRequest = catchAsync(async (req, res, next) => {
     where: {
       company_id,
       employee_id,
-      leave_type_id,
       status: "approved",
+      ...(isFloatingLeave ? {} : { leave_type_id }),
       [db.Sequelize.Op.or]: [
         { start_date: { [db.Sequelize.Op.between]: [start, end] } },
         { end_date: { [db.Sequelize.Op.between]: [start, end] } },
@@ -272,33 +318,35 @@ const createLeaveRequest = catchAsync(async (req, res, next) => {
   const calculatedDays = Math.floor((end - start) / msPerDay) + 1;
 
   // Step 4: Validate total_days against calculated date range
-  if (total_days > calculatedDays) {
+  if (effectiveTotalDays > calculatedDays) {
     return next(
       new AppError(
-        `Total days (${total_days}) exceeds the date range (${calculatedDays} days)`,
+        `Total days (${effectiveTotalDays}) exceeds the date range (${calculatedDays} days)`,
         STATUS_CODE.BAD_REQUEST
       )
     );
   }
 
-  const leave = await employeLeaveRepos.findOne({
-    attributes: [
-      "id",
-      "leave_count",
-      "leave_type",
-      "leave_remaing",
-      "leave_used",
-    ],
-    where: {
-      company_id,
-      employee_id,
-      leave_id: leave_type_id,
-    },
-  });
-  if (!leave) {
-    return next(new AppError("Leave does not found", STATUS_CODE.NOT_FOUND));
+  if (!isFloatingLeave) {
+    const leave = await employeLeaveRepos.findOne({
+      attributes: [
+        "id",
+        "leave_count",
+        "leave_type",
+        "leave_remaing",
+        "leave_used",
+      ],
+      where: {
+        company_id,
+        employee_id,
+        leave_id: leave_type_id,
+      },
+    });
+    if (!leave) {
+      return next(new AppError("Leave does not found", STATUS_CODE.NOT_FOUND));
+    }
+    leave_type = leave.leave_type;
   }
-  const { leave_type } = leave;
 
   // Step 7: Create leave request (uncomment and customize as needed)
   const transaction = await db.sequelize.transaction();
@@ -307,11 +355,15 @@ const createLeaveRequest = catchAsync(async (req, res, next) => {
       {
         employee_id,
         company_id,
-        leave_type_id,
-        start_date,
-        end_date,
-        total_days,
-        leave_on, // optional JSONB field
+        leave_type_id: isFloatingLeave ? null : leave_type_id,
+        request_type,
+        festival_name: isFloatingLeave ? festival_name : null,
+        festival_date: isFloatingLeave ? formatDateOnly(festival_date) : null,
+        justification: isFloatingLeave ? justification : null,
+        start_date: effectiveStartDate,
+        end_date: effectiveEndDate,
+        total_days: effectiveTotalDays,
+        leave_on: effectiveLeaveOn,
         reason,
         emergency_contact_person,
         status: "pending",
@@ -330,10 +382,10 @@ const createLeaveRequest = catchAsync(async (req, res, next) => {
     employee_id,
     company_id,
     leave_type,
-    start_date,
-    end_date,
-    total_days,
-    leave_on,
+    start_date: effectiveStartDate,
+    end_date: effectiveEndDate,
+    total_days: effectiveTotalDays,
+    leave_on: effectiveLeaveOn,
     reason,
   });
 
