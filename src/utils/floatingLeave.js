@@ -1,4 +1,3 @@
-const path = require("path");
 const { Op } = require("sequelize");
 const AppError = require("./appError");
 const { STATUS_CODE } = require("../constants/statusCode");
@@ -8,10 +7,7 @@ const POLICY_LEAVE_TYPE = "policy";
 const FLOATING_LEAVE_LABEL = "Floating Leave";
 const FLOATING_LEAVE_LIMIT = 2;
 
-const holidayData = require(path.join(
-  __dirname,
-  "../../../lms-frontend_1/src/data/holiday.json"
-));
+const holidayData = require("../data/holiday.json");
 
 const formatDateOnly = (date) => {
   const parsed = new Date(date);

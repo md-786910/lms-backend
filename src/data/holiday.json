@@ -1,0 +1,556 @@
+{
+  "holiday_data": [
+    {
+      "year": 2025,
+      "fixed_holidays": [
+        {
+          "date": "2025-01-26",
+          "day": "Sunday",
+          "name": "Republic Day"
+        },
+        {
+          "date": "2025-03-14",
+          "day": "Friday",
+          "name": "Holi"
+        },
+        {
+          "date": "2025-03-31",
+          "day": "Monday",
+          "name": "Eid-ul-Fitr"
+        },
+        {
+          "date": "2025-04-18",
+          "day": "Friday",
+          "name": "Good Friday"
+        },
+        {
+          "date": "2025-08-15",
+          "day": "Friday",
+          "name": "Independence Day"
+        },
+        {
+          "date": "2025-10-02",
+          "day": "Thursday",
+          "name": "Gandhi Jayanti"
+        },
+        {
+          "date": "2025-10-21",
+          "day": "Tuesday",
+          "name": "Diwali (Deepavali)"
+        },
+        {
+          "date": "2025-12-25",
+          "day": "Thursday",
+          "name": "Christmas Day"
+        }
+      ],
+      "restricted_holidays": [
+        {
+          "date": "2025-01-01",
+          "day": "Wednesday",
+          "name": "New Year's Day"
+        },
+        {
+          "date": "2025-01-14",
+          "day": "Tuesday",
+          "name": "Makar Sankranti / Pongal"
+        },
+        {
+          "date": "2025-02-26",
+          "day": "Wednesday",
+          "name": "Maha Shivaratri"
+        },
+        {
+          "date": "2025-04-14",
+          "day": "Monday",
+          "name": "Ambedkar Jayanti"
+        },
+        {
+          "date": "2025-05-12",
+          "day": "Monday",
+          "name": "Buddha Purnima"
+        },
+        {
+          "date": "2025-06-07",
+          "day": "Saturday",
+          "name": "Eid-ul-Adha (Bakrid)"
+        },
+        {
+          "date": "2025-08-18",
+          "day": "Monday",
+          "name": "Janmashtami"
+        },
+        {
+          "date": "2025-08-29",
+          "day": "Friday",
+          "name": "Ganesh Chaturthi"
+        },
+        {
+          "date": "2025-11-06",
+          "day": "Thursday",
+          "name": "Guru Nanak Jayanti"
+        }
+      ]
+    },
+    {
+      "year": 2026,
+      "fixed_holidays": [
+        {
+          "date": "2026-01-26",
+          "day": "Monday",
+          "name": "Republic Day"
+        },
+        {
+          "date": "2026-03-04",
+          "day": "Wednesday",
+          "name": "Holi"
+        },
+        {
+          "date": "2026-03-20",
+          "day": "Friday",
+          "name": "Eid-ul-Fitr"
+        },
+        {
+          "date": "2026-08-15",
+          "day": "Saturday",
+          "name": "Independence Day"
+        },
+        {
+          "date": "2026-10-02",
+          "day": "Friday",
+          "name": "Gandhi Jayanti"
+        },
+        {
+          "date": "2026-11-09",
+          "day": "Monday",
+          "name": "Diwali (Deepavali)"
+        },
+        {
+          "date": "2026-12-25",
+          "day": "Friday",
+          "name": "Christmas Day"
+        }
+      ],
+      "restricted_holidays": [
+        {
+          "date": "2026-01-14",
+          "day": "Wednesday",
+          "name": "Makar Sankranti / Pongal"
+        },
+        {
+          "date": "2026-02-15",
+          "day": "Sunday",
+          "name": "Maha Shivaratri"
+        },
+        {
+          "date": "2026-03-26",
+          "day": "Thursday",
+          "name": "Rama Navami"
+        },
+        {
+          "date": "2026-03-31",
+          "day": "Tuesday",
+          "name": "Mahavir Jayanti"
+        },
+        {
+          "date": "2026-04-03",
+          "day": "Friday",
+          "name": "Good Friday"
+        },
+        {
+          "date": "2026-04-14",
+          "day": "Tuesday",
+          "name": "Ambedkar Jayanti"
+        },
+        {
+          "date": "2026-05-01",
+          "day": "Friday",
+          "name": "Labour Day"
+        },
+        {
+          "date": "2026-05-01",
+          "day": "Sunday",
+          "name": "Buddha Purnima"
+        },
+        {
+          "date": "2026-05-28",
+          "day": "Thursday",
+          "name": "Eid-ul-Adha (Bakrid)"
+        },
+        {
+          "date": "2026-06-26",
+          "day": "Friday",
+          "name": "Muharram/Ashura (Tentative Date)"
+        },
+        {
+          "date": "2026-08-26",
+          "day": "Wednesday",
+          "name": "Milad un-Nabi (Tentative Date)"
+        },
+        {
+          "date": "2026-08-28",
+          "day": "Friday",
+          "name": "Raksha Bandhan"
+        },
+        {
+          "date": "2026-09-04",
+          "day": "Friday",
+          "name": "Janmashtami"
+        },
+        {
+          "date": "2026-09-14",
+          "day": "Monday",
+          "name": "Ganesh Chaturthi"
+        },
+        {
+          "date": "2026-11-25",
+          "day": "Wednesday",
+          "name": "Guru Nanak Jayanti"
+        }
+      ]
+    },
+    {
+      "year": 2027,
+      "fixed_holidays": [
+        {
+          "date": "2027-01-26",
+          "day": "Tuesday",
+          "name": "Republic Day"
+        },
+        {
+          "date": "2027-03-10",
+          "day": "Wednesday",
+          "name": "Eid-ul-Fitr"
+        },
+        {
+          "date": "2027-03-23",
+          "day": "Tuesday",
+          "name": "Holi"
+        },
+        {
+          "date": "2027-03-26",
+          "day": "Friday",
+          "name": "Good Friday"
+        },
+        {
+          "date": "2027-08-15",
+          "day": "Sunday",
+          "name": "Independence Day"
+        },
+        {
+          "date": "2027-10-02",
+          "day": "Saturday",
+          "name": "Gandhi Jayanti"
+        },
+        {
+          "date": "2027-10-29",
+          "day": "Friday",
+          "name": "Diwali (Deepavali)"
+        },
+        {
+          "date": "2027-12-25",
+          "day": "Saturday",
+          "name": "Christmas Day"
+        }
+      ],
+      "restricted_holidays": [
+        {
+          "date": "2027-01-14",
+          "day": "Thursday",
+          "name": "Makar Sankranti / Pongal"
+        },
+        {
+          "date": "2027-02-05",
+          "day": "Friday",
+          "name": "Maha Shivaratri"
+        },
+        {
+          "date": "2027-04-14",
+          "day": "Wednesday",
+          "name": "Ambedkar Jayanti"
+        },
+        {
+          "date": "2027-05-20",
+          "day": "Thursday",
+          "name": "Buddha Purnima"
+        },
+        {
+          "date": "2027-05-17",
+          "day": "Monday",
+          "name": "Eid-ul-Adha (Bakrid)"
+        },
+        {
+          "date": "2027-08-27",
+          "day": "Friday",
+          "name": "Janmashtami"
+        },
+        {
+          "date": "2027-09-07",
+          "day": "Tuesday",
+          "name": "Ganesh Chaturthi"
+        },
+        {
+          "date": "2027-11-14",
+          "day": "Sunday",
+          "name": "Guru Nanak Jayanti"
+        }
+      ]
+    },
+    {
+      "year": 2028,
+      "fixed_holidays": [
+        {
+          "date": "2028-01-26",
+          "day": "Wednesday",
+          "name": "Republic Day"
+        },
+        {
+          "date": "2028-02-27",
+          "day": "Sunday",
+          "name": "Eid-ul-Fitr"
+        },
+        {
+          "date": "2028-03-11",
+          "day": "Saturday",
+          "name": "Holi"
+        },
+        {
+          "date": "2028-04-14",
+          "day": "Friday",
+          "name": "Good Friday"
+        },
+        {
+          "date": "2028-05-01",
+          "day": "Monday",
+          "name": "Labour Day"
+        },
+        {
+          "date": "2028-08-15",
+          "day": "Tuesday",
+          "name": "Independence Day"
+        },
+        {
+          "date": "2028-10-02",
+          "day": "Monday",
+          "name": "Gandhi Jayanti"
+        },
+        {
+          "date": "2028-10-17",
+          "day": "Tuesday",
+          "name": "Diwali (Deepavali)"
+        },
+        {
+          "date": "2028-12-25",
+          "day": "Monday",
+          "name": "Christmas Day"
+        }
+      ],
+      "restricted_holidays": [
+        {
+          "date": "2028-01-15",
+          "day": "Saturday",
+          "name": "Makar Sankranti / Pongal"
+        },
+        {
+          "date": "2028-02-24",
+          "day": "Thursday",
+          "name": "Maha Shivaratri"
+        },
+        {
+          "date": "2028-05-06",
+          "day": "Saturday",
+          "name": "Eid-ul-Adha (Bakrid)"
+        },
+        {
+          "date": "2028-05-09",
+          "day": "Tuesday",
+          "name": "Buddha Purnima"
+        },
+        {
+          "date": "2028-08-15",
+          "day": "Tuesday",
+          "name": "Janmashtami"
+        },
+        {
+          "date": "2028-08-26",
+          "day": "Saturday",
+          "name": "Ganesh Chaturthi"
+        },
+        {
+          "date": "2028-11-02",
+          "day": "Thursday",
+          "name": "Guru Nanak Jayanti"
+        }
+      ]
+    },
+    {
+      "year": 2029,
+      "fixed_holidays": [
+        {
+          "date": "2029-01-26",
+          "day": "Friday",
+          "name": "Republic Day"
+        },
+        {
+          "date": "2029-02-15",
+          "day": "Thursday",
+          "name": "Eid-ul-Fitr"
+        },
+        {
+          "date": "2029-03-01",
+          "day": "Thursday",
+          "name": "Holi"
+        },
+        {
+          "date": "2029-03-30",
+          "day": "Friday",
+          "name": "Good Friday"
+        },
+        {
+          "date": "2029-08-15",
+          "day": "Wednesday",
+          "name": "Independence Day"
+        },
+        {
+          "date": "2029-10-02",
+          "day": "Tuesday",
+          "name": "Gandhi Jayanti"
+        },
+        {
+          "date": "2029-11-05",
+          "day": "Monday",
+          "name": "Diwali (Deepavali)"
+        },
+        {
+          "date": "2029-12-25",
+          "day": "Tuesday",
+          "name": "Christmas Day"
+        }
+      ],
+      "restricted_holidays": [
+        {
+          "date": "2029-01-14",
+          "day": "Sunday",
+          "name": "Makar Sankranti / Pongal"
+        },
+        {
+          "date": "2029-02-12",
+          "day": "Monday",
+          "name": "Maha Shivaratri"
+        },
+        {
+          "date": "2029-04-28",
+          "day": "Saturday",
+          "name": "Buddha Purnima"
+        },
+        {
+          "date": "2029-04-25",
+          "day": "Wednesday",
+          "name": "Eid-ul-Adha (Bakrid)"
+        },
+        {
+          "date": "2029-08-04",
+          "day": "Saturday",
+          "name": "Janmashtami"
+        },
+        {
+          "date": "2029-09-03",
+          "day": "Monday",
+          "name": "Ganesh Chaturthi"
+        },
+        {
+          "date": "2029-11-21",
+          "day": "Wednesday",
+          "name": "Guru Nanak Jayanti"
+        }
+      ]
+    },
+    {
+      "year": 2030,
+      "fixed_holidays": [
+        {
+          "date": "2030-01-26",
+          "day": "Saturday",
+          "name": "Republic Day"
+        },
+        {
+          "date": "2030-02-04",
+          "day": "Monday",
+          "name": "Eid-ul-Fitr"
+        },
+        {
+          "date": "2030-03-19",
+          "day": "Tuesday",
+          "name": "Holi"
+        },
+        {
+          "date": "2030-04-14",
+          "day": "Sunday",
+          "name": "Eid-ul-Adha (Bakrid)"
+        },
+        {
+          "date": "2030-04-19",
+          "day": "Friday",
+          "name": "Good Friday"
+        },
+        {
+          "date": "2030-08-15",
+          "day": "Thursday",
+          "name": "Independence Day"
+        },
+        {
+          "date": "2030-10-02",
+          "day": "Wednesday",
+          "name": "Gandhi Jayanti"
+        },
+        {
+          "date": "2030-10-25",
+          "day": "Friday",
+          "name": "Diwali (Deepavali)"
+        },
+        {
+          "date": "2030-12-25",
+          "day": "Wednesday",
+          "name": "Christmas Day"
+        }
+      ],
+      "restricted_holidays": [
+        {
+          "date": "2030-01-14",
+          "day": "Monday",
+          "name": "Makar Sankranti / Pongal"
+        },
+        {
+          "date": "2030-03-02",
+          "day": "Saturday",
+          "name": "Maha Shivaratri"
+        },
+        {
+          "date": "2030-05-18",
+          "day": "Saturday",
+          "name": "Buddha Purnima"
+        },
+        {
+          "date": "2030-08-13",
+          "day": "Tuesday",
+          "name": "Raksha Bandhan"
+        },
+        {
+          "date": "2030-08-23",
+          "day": "Friday",
+          "name": "Janmashtami"
+        },
+        {
+          "date": "2030-09-03",
+          "day": "Tuesday",
+          "name": "Ganesh Chaturthi"
+        },
+        {
+          "date": "2030-11-10",
+          "day": "Sunday",
+          "name": "Guru Nanak Jayanti"
+        }
+      ]
+    }
+  ]
+}
