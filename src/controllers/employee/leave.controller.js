@@ -8,6 +8,7 @@ const {
   activityRepos,
   employeeRepos,
   userRepos,
+  extraWorkLeaveBalanceRepos,
 } = require("../../repository/base");
 const AppError = require("../../utils/appError");
 const catchAsync = require("../../utils/catchAsync");
@@ -25,6 +26,13 @@ const {
   formatDateOnly,
   validateFloatingLeaveRequest,
 } = require("../../utils/floatingLeave");
+const {
+  EXTRA_WORK_LEAVE_LABEL,
+  EXTRA_WORK_LEAVE_TYPE,
+  attachExtraWorkLeaveType,
+  getExtraWorkBalance,
+  validateExtraWorkLeaveAvailability,
+} = require("../../utils/extraWorkLeave");
 
 const getPolicyRequestTypeWhere = () => ({
   request_type: POLICY_LEAVE_TYPE,
@@ -164,6 +172,11 @@ const getAllLeave = catchAsync(async (req, res, next) => {
   total_pending = total_pending?.reduce((sum, leave) => {
     return sum + getLeaveDaysInsideRange(leave, cycleInfo);
   }, 0);
+  const extraWorkLeaveBalance = await getExtraWorkBalance({
+    extraWorkLeaveBalanceRepos,
+    company_id,
+    employee_id: id,
+  });
 
   res.status(200).json({
     status: true,
@@ -188,6 +201,7 @@ const getAllLeave = catchAsync(async (req, res, next) => {
       total_approved: aggregateStats.currentCycle.availed,
       total_pending: roundLeave(total_pending),
       total_remaining: aggregateStats.currentCycle.remaining,
+      extra_work_leave_balance: extraWorkLeaveBalance,
     },
   });
 });
@@ -215,6 +229,10 @@ const getAllLeaveRequest = catchAsync(async (req, res, next) => {
   for (const key in leaves) {
     if (leaves[key].request_type === FLOATING_LEAVE_TYPE) {
       attachFloatingLeaveType(leaves[key]);
+      continue;
+    }
+    if (leaves[key].request_type === EXTRA_WORK_LEAVE_TYPE) {
+      attachExtraWorkLeaveType(leaves[key]);
       continue;
     }
     const empLeave = await employeLeaveRepos.findOne({
@@ -251,12 +269,13 @@ const createLeaveRequest = catchAsync(async (req, res, next) => {
     justification,
   } = req.body;
   const isFloatingLeave = request_type === FLOATING_LEAVE_TYPE;
+  const isExtraWorkLeave = request_type === EXTRA_WORK_LEAVE_TYPE;
 
   let effectiveStartDate = start_date;
   let effectiveEndDate = end_date;
   let effectiveTotalDays = total_days;
   let effectiveLeaveOn = leave_on;
-  let leave_type = FLOATING_LEAVE_LABEL;
+  let leave_type = isExtraWorkLeave ? EXTRA_WORK_LEAVE_LABEL : FLOATING_LEAVE_LABEL;
 
   if (isFloatingLeave) {
     const holiday = await validateFloatingLeaveRequest({
@@ -296,7 +315,7 @@ const createLeaveRequest = catchAsync(async (req, res, next) => {
       company_id,
       employee_id,
       status: "approved",
-      ...(isFloatingLeave ? {} : { leave_type_id }),
+      ...(isFloatingLeave || isExtraWorkLeave ? {} : { leave_type_id }),
       [db.Sequelize.Op.or]: [
         { start_date: { [db.Sequelize.Op.between]: [start, end] } },
         { end_date: { [db.Sequelize.Op.between]: [start, end] } },
@@ -327,7 +346,21 @@ const createLeaveRequest = catchAsync(async (req, res, next) => {
     );
   }
 
-  if (!isFloatingLeave) {
+  if (isExtraWorkLeave) {
+    try {
+      await validateExtraWorkLeaveAvailability({
+        extraWorkLeaveBalanceRepos,
+        leaveRequestRepos,
+        company_id,
+        employee_id,
+        total_days: effectiveTotalDays,
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  if (!isFloatingLeave && !isExtraWorkLeave) {
     const leave = await employeLeaveRepos.findOne({
       attributes: [
         "id",
@@ -355,7 +388,7 @@ const createLeaveRequest = catchAsync(async (req, res, next) => {
       {
         employee_id,
         company_id,
-        leave_type_id: isFloatingLeave ? null : leave_type_id,
+        leave_type_id: isFloatingLeave || isExtraWorkLeave ? null : leave_type_id,
         request_type,
         festival_name: isFloatingLeave ? festival_name : null,
         festival_date: isFloatingLeave ? formatDateOnly(festival_date) : null,

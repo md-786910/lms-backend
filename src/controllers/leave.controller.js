@@ -5,6 +5,8 @@ const {
   employeeLeaveMonthlySummaryRepos,
   prefixRepos,
   activityRepos,
+  extraWorkLeaveBalanceRepos,
+  extraWorkLeaveTransactionRepos,
 } = require("../repository/base");
 const catchAsync = require("../utils/catchAsync");
 const { Op } = require("sequelize");
@@ -31,6 +33,13 @@ const {
   formatDateOnly,
   validateFloatingLeaveRequest,
 } = require("../utils/floatingLeave");
+const {
+  EXTRA_WORK_LEAVE_LABEL,
+  EXTRA_WORK_LEAVE_TYPE,
+  attachExtraWorkLeaveType,
+  validateExtraWorkLeaveAvailability,
+  debitExtraWorkLeave,
+} = require("../utils/extraWorkLeave");
 
 const getAllEmployeLeavs = catchAsync(async (req, res, next) => {
   const query = req.query;
@@ -118,6 +127,8 @@ const getAllEmployeLeavs = catchAsync(async (req, res, next) => {
 
     if (leaves[key].request_type === FLOATING_LEAVE_TYPE) {
       attachFloatingLeaveType(leaves[key]);
+    } else if (leaves[key].request_type === EXTRA_WORK_LEAVE_TYPE) {
+      attachExtraWorkLeaveType(leaves[key]);
     } else {
       const empLeave = await employeLeaveRepos.findOne({
         attributes: ["id", "leave_type"],
@@ -203,7 +214,8 @@ const employeLeaveApprove = catchAsync(async (req, res, next) => {
   }
 
   let checkLeaveAvailable = null;
-  if (leave.request_type !== FLOATING_LEAVE_TYPE) {
+  const isExtraWorkLeave = leave.request_type === EXTRA_WORK_LEAVE_TYPE;
+  if (leave.request_type !== FLOATING_LEAVE_TYPE && !isExtraWorkLeave) {
     // check leave available to corresponding type and update it
     checkLeaveAvailable = await employeLeaveRepos.findOne({
       where: {
@@ -221,7 +233,14 @@ const employeLeaveApprove = catchAsync(async (req, res, next) => {
   try {
     leave.status = "approved";
     await leave.save({ transaction });
-    if (leave.request_type !== FLOATING_LEAVE_TYPE) {
+    if (isExtraWorkLeave) {
+      await debitExtraWorkLeave({
+        extraWorkLeaveBalanceRepos,
+        extraWorkLeaveTransactionRepos,
+        leaveRequest: leave,
+        transaction,
+      });
+    } else if (leave.request_type !== FLOATING_LEAVE_TYPE) {
       await recomputeEmployeeLeaveBalance({
         company_id,
         employee_id,
@@ -276,7 +295,9 @@ const employeLeaveApprove = catchAsync(async (req, res, next) => {
     employee_id,
     company_id,
     leave_request_id: id,
-    leave_type: checkLeaveAvailable?.leave_type || FLOATING_LEAVE_LABEL,
+    leave_type: isExtraWorkLeave
+      ? EXTRA_WORK_LEAVE_LABEL
+      : checkLeaveAvailable?.leave_type || FLOATING_LEAVE_LABEL,
   });
 
   res.status(200).json({
@@ -355,6 +376,7 @@ const adminCreateLeaveRequest = catchAsync(async (req, res, next) => {
     justification,
   } = req.body;
   const isFloatingLeave = request_type === FLOATING_LEAVE_TYPE;
+  const isExtraWorkLeave = request_type === EXTRA_WORK_LEAVE_TYPE;
 
   // Validate employee exists in the company
   const employee = await employeeRepos.findOne({
@@ -410,7 +432,7 @@ const adminCreateLeaveRequest = catchAsync(async (req, res, next) => {
     where: {
       company_id,
       employee_id,
-      ...(isFloatingLeave ? {} : { leave_type_id }),
+      ...(isFloatingLeave || isExtraWorkLeave ? {} : { leave_type_id }),
       [Op.or]: [
         { start_date: { [Op.between]: [start, end] } },
         { end_date: { [Op.between]: [start, end] } },
@@ -428,7 +450,22 @@ const adminCreateLeaveRequest = catchAsync(async (req, res, next) => {
   }
 
   // Step 4: Validate leave type exists
-  if (!isFloatingLeave) {
+  if (isExtraWorkLeave) {
+    try {
+      await validateExtraWorkLeaveAvailability({
+        extraWorkLeaveBalanceRepos,
+        leaveRequestRepos,
+        company_id,
+        employee_id,
+        total_days: effectiveTotalDays,
+        includePending: status !== "approved",
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  if (!isFloatingLeave && !isExtraWorkLeave) {
     leaveType = await employeLeaveRepos.findOne({
       attributes: [
         "id",
@@ -474,7 +511,7 @@ const adminCreateLeaveRequest = catchAsync(async (req, res, next) => {
       {
         employee_id,
         company_id,
-        leave_type_id: isFloatingLeave ? null : leave_type_id,
+        leave_type_id: isFloatingLeave || isExtraWorkLeave ? null : leave_type_id,
         request_type,
         festival_name: isFloatingLeave ? festival_name : null,
         festival_date: isFloatingLeave ? formatDateOnly(festival_date) : null,
@@ -491,7 +528,29 @@ const adminCreateLeaveRequest = catchAsync(async (req, res, next) => {
     );
 
     // Step 8: If status is approved, update leave balance
-    if (status === "approved" && !isFloatingLeave) {
+    if (status === "approved" && isExtraWorkLeave) {
+      await debitExtraWorkLeave({
+        extraWorkLeaveBalanceRepos,
+        extraWorkLeaveTransactionRepos,
+        leaveRequest,
+        transaction,
+      });
+
+      await activityRepos.addActivity({
+        company_id,
+        employee_id,
+        title: `Admin created approved extra work leave for ${employee.first_name}`,
+        message: `${employee.first_name}'s extra work leave has been approved by admin`,
+        role: "employee",
+      });
+
+      eventEmitter.emit(eventObj.APPROVED_LEAVE, {
+        employee_id,
+        company_id,
+        leave_request_id: leaveRequest.id,
+        leave_type: EXTRA_WORK_LEAVE_LABEL,
+      });
+    } else if (status === "approved" && !isFloatingLeave) {
       await recomputeEmployeeLeaveBalance({
         company_id,
         employee_id,

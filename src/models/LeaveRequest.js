@@ -33,7 +33,7 @@ module.exports = (sequelize, DataTypes) => {
       },
       request_type: {
         type: DataTypes.ENUM,
-        values: ["policy", "floating"],
+        values: ["policy", "floating", "extra_work"],
         defaultValue: "policy",
       },
       festival_name: {

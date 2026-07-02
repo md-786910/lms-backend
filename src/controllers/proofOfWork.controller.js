@@ -11,6 +11,8 @@ const {
   userRepos,
   activityRepos,
   notificationRepos,
+  extraWorkLeaveBalanceRepos,
+  extraWorkLeaveTransactionRepos,
 } = require("../repository/base");
 
 const submissionInclude = [
@@ -65,6 +67,58 @@ const notifyEmployeeReview = async ({ company_id, employee_id, status, title }) 
   });
 };
 
+const getCreditDays = (workingHours) => {
+  if (workingHours === "half_day") return 0.5;
+  return 1;
+};
+
+const creditExtraWorkLeave = async ({ submission, transaction }) => {
+  const existingCredit = await extraWorkLeaveTransactionRepos.findOne({
+    where: {
+      transaction_type: "credit",
+      source_type: "proof_of_work",
+      source_id: submission.id,
+    },
+    transaction,
+  });
+
+  if (existingCredit) return;
+
+  const days = getCreditDays(submission.working_hours);
+  const [balance] = await extraWorkLeaveBalanceRepos.findOrCreate({
+    where: {
+      company_id: submission.company_id,
+      employee_id: submission.employee_id,
+    },
+    defaults: {
+      company_id: submission.company_id,
+      employee_id: submission.employee_id,
+      total_earned: 0,
+      total_used: 0,
+      balance: 0,
+    },
+    transaction,
+  });
+
+  balance.total_earned = Number(balance.total_earned || 0) + days;
+  balance.balance = Number(balance.balance || 0) + days;
+  await balance.save({ transaction });
+
+  await extraWorkLeaveTransactionRepos.create(
+    {
+      company_id: submission.company_id,
+      employee_id: submission.employee_id,
+      transaction_type: "credit",
+      source_type: "proof_of_work",
+      source_id: submission.id,
+      days,
+      balance_after: balance.balance,
+      description: `Proof of work approved: ${submission.title}`,
+    },
+    { transaction }
+  );
+};
+
 const ensureFilesExist = async (fileIds) => {
   const uniqueFileIds = [...new Set(fileIds.map(Number))];
   const files = await fileRepos.findAll({
@@ -79,7 +133,7 @@ const ensureFilesExist = async (fileIds) => {
 
 const createProofOfWork = catchAsync(async (req, res, next) => {
   const { id: employee_id, company_id } = req.user;
-  const { title, work_type, work_date, description, file_ids } = req.body;
+  const { title, work_type, working_hours, work_date, description, file_ids } = req.body;
 
   let uniqueFileIds;
   try {
@@ -97,6 +151,7 @@ const createProofOfWork = catchAsync(async (req, res, next) => {
         employee_id,
         title,
         work_type,
+        working_hours,
         work_date,
         description,
         status: "pending",
@@ -223,11 +278,28 @@ const reviewProofOfWork = (status) =>
       return next(new AppError("Only pending proof of work submissions can be reviewed", STATUS_CODE.BAD_REQUEST));
     }
 
-    submission.status = status;
-    submission.manager_comment = manager_comment;
-    submission.reviewed_by = reviewer_id;
-    submission.reviewed_at = new Date();
-    await submission.save();
+    const transaction = await db.sequelize.transaction();
+    try {
+      submission.status = status;
+      submission.manager_comment = manager_comment;
+      submission.reviewed_by = reviewer_id;
+      submission.reviewed_at = new Date();
+      await submission.save({ transaction });
+
+      if (status === "approved") {
+        await creditExtraWorkLeave({ submission, transaction });
+      }
+
+      await transaction.commit();
+    } catch (error) {
+      await transaction.rollback();
+      return next(
+        new AppError(
+          error.message || "Error reviewing proof of work",
+          STATUS_CODE.INTERNAL_SERVER_ERROR
+        )
+      );
+    }
 
     await activityRepos.addActivity({
       company_id,

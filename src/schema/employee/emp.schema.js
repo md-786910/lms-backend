@@ -1,8 +1,8 @@
 const joi = require("joi");
 const leaveRequest = joi.object({
-  request_type: joi.string().valid("policy", "floating").default("policy"),
+  request_type: joi.string().valid("policy", "floating", "extra_work").default("policy"),
   leave_type_id: joi.when("request_type", {
-    is: "floating",
+    is: joi.valid("floating", "extra_work"),
     then: joi.number().allow(null).optional(),
     otherwise: joi.number().required(),
   }),

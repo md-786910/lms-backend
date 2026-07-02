@@ -43,6 +43,11 @@ module.exports = (sequelize, DataTypes) => {
         values: ["remote", "overtime", "special_assignment", "task_completion"],
         allowNull: false,
       },
+      working_hours: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        defaultValue: "full_day",
+      },
       work_date: {
         type: DataTypes.DATEONLY,
         allowNull: false,

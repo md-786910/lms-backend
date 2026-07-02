@@ -18,6 +18,7 @@ const {
   leaveRequestRepos,
   activityRepos,
   prefixRepos,
+  extraWorkLeaveBalanceRepos,
 } = require("../repository/base");
 const { generateToken } = require("../helpers/jwt");
 const eventEmitter = require("../events/eventEmitter");
@@ -29,6 +30,7 @@ const {
   getYearRangeWhere,
   roundLeave,
 } = require("../utils/leaveCarryForward");
+const { POLICY_LEAVE_TYPE } = require("../utils/floatingLeave");
 
 const parseLeaveOn = (leaveOn) => {
   if (Array.isArray(leaveOn)) return leaveOn;
@@ -252,10 +254,28 @@ const getAllEmployees = catchAsync(async (req, res, next) => {
             company_id,
             employee_id: employeeIds,
             status: "approved",
+            request_type: POLICY_LEAVE_TYPE,
             ...getYearRangeWhere(currentYear),
           },
         })
       : [];
+  const extraWorkBalances =
+    employeeIds.length > 0
+      ? await extraWorkLeaveBalanceRepos.findAll({
+          where: {
+            company_id,
+            employee_id: employeeIds,
+          },
+        })
+      : [];
+  const extraWorkBalanceByEmployee = extraWorkBalances.reduce((acc, balance) => {
+    acc[Number(balance.employee_id)] = {
+      total_earned: roundLeave(balance.total_earned),
+      total_used: roundLeave(balance.total_used),
+      balance: roundLeave(balance.balance),
+    };
+    return acc;
+  }, {});
   const yearlyUsedByEmployee = approvedYearlyLeaves.reduce((acc, leave) => {
     const employeeId = Number(leave.employee_id);
     acc[employeeId] =
@@ -302,6 +322,12 @@ const getAllEmployees = catchAsync(async (req, res, next) => {
       remaining: aggregateStats.currentCycle.remaining,
       deduction: aggregateStats.currentCycle.deduction,
     };
+    employees[key].dataValues.extra_work_leave_balance =
+      extraWorkBalanceByEmployee[employees[key].id] || {
+        total_earned: 0,
+        total_used: 0,
+        balance: 0,
+      };
   }
 
   res.status(STATUS_CODE.OK).json({

@@ -39,6 +39,12 @@ const employeeLeaveMonthlySummaryRepos =
 
 const leaveRequestRepos = db[TABLE_MODEL_MAPPING[TABLE_NAME.LEAVE_REQUEST]];
 
+const extraWorkLeaveBalanceRepos =
+  db[TABLE_MODEL_MAPPING[TABLE_NAME.EXTRA_WORK_LEAVE_BALANCE]];
+
+const extraWorkLeaveTransactionRepos =
+  db[TABLE_MODEL_MAPPING[TABLE_NAME.EXTRA_WORK_LEAVE_TRANSACTION]];
+
 const proofOfWorkSubmissionRepos =
   db[TABLE_MODEL_MAPPING[TABLE_NAME.PROOF_OF_WORK_SUBMISSION]];
 
@@ -60,6 +66,8 @@ module.exports = {
   employeLeaveRepos,
   employeeLeaveMonthlySummaryRepos,
   leaveRequestRepos,
+  extraWorkLeaveBalanceRepos,
+  extraWorkLeaveTransactionRepos,
   documentCategoryRepos,
   userRepos,
   companyRepos,
