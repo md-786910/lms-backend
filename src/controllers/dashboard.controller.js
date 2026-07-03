@@ -6,6 +6,7 @@ const {
   employeeLeaveMonthlySummaryRepos,
   activityRepos,
   prefixRepos,
+  proofOfWorkSubmissionRepos,
 } = require("../repository/base");
 const catchAsync = require("../utils/catchAsync");
 const dayjs = require("dayjs");
@@ -98,6 +99,52 @@ const getDashboard = catchAsync(async (req, res, next) => {
   const pendingLeaveCount = await leaveRequestRepos.count({
     where: { company_id, status: "pending" },
   });
+
+  const pendingProofOfWorkCount = await proofOfWorkSubmissionRepos.count({
+    where: { company_id, status: "pending" },
+  });
+
+  const pendingProofOfWorkSubmissions = await proofOfWorkSubmissionRepos.findAll({
+    where: { company_id, status: "pending" },
+    include: [
+      {
+        model: employeeRepos,
+        as: "employee",
+        attributes: [
+          "id",
+          "first_name",
+          "last_name",
+          "employee_no",
+          "department_id",
+        ],
+      },
+    ],
+    order: [["createdAt", "DESC"]],
+    limit: 5,
+  });
+
+  for (const submission of pendingProofOfWorkSubmissions) {
+    if (!submission.employee) {
+      continue;
+    }
+
+    let prefixName = "EMP";
+    const departmentId = submission.employee.department_id;
+    if (departmentId) {
+      const prefix = await prefixRepos.findOne({
+        attributes: ["name"],
+        where: {
+          id: departmentId,
+          company_id,
+        },
+      });
+      prefixName = prefix?.name ?? prefixName;
+    }
+
+    if (!submission.employee.employee_no) {
+      submission.employee.employee_no = `${prefixName}-${submission.employee?.id}`;
+    }
+  }
 
   const pendingLeaveRequests = await leaveRequestRepos.findAll({
     where: { company_id, status: "pending" },
@@ -245,6 +292,8 @@ const getDashboard = catchAsync(async (req, res, next) => {
       total_employee,
       active_employee,
       pending_leave: pendingLeaveCount,
+      pending_proof_of_work_count: pendingProofOfWorkCount,
+      pending_proof_of_work_submissions: pendingProofOfWorkSubmissions,
       on_leave_today_count: employeesOnLeaveToday.length,
       on_leave_today: employeesOnLeaveToday,
       pending_leave_requests: pendingLeaveRequests,
