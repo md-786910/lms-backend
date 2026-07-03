@@ -9,6 +9,7 @@ const {
   employeeRepos,
   userRepos,
   extraWorkLeaveBalanceRepos,
+  proofOfWorkSubmissionRepos,
 } = require("../../repository/base");
 const AppError = require("../../utils/appError");
 const catchAsync = require("../../utils/catchAsync");
@@ -178,6 +179,35 @@ const getAllLeave = catchAsync(async (req, res, next) => {
     employee_id: id,
   });
 
+  const firstCycleStart = new Date(cycleInfo.year, 0, 1);
+  const firstCycleEnd = new Date(cycleInfo.year, 5, 30, 23, 59, 59, 999);
+  const secondCycleStart = new Date(cycleInfo.year, 6, 1);
+  const secondCycleEnd = new Date(cycleInfo.year, 11, 31, 23, 59, 59, 999);
+
+  const getCycleExtraWork = async (startDate, endDate) => {
+    const submissions = await proofOfWorkSubmissionRepos.findAll({
+      where: {
+        company_id,
+        employee_id: id,
+        status: "approved",
+        work_date: {
+          [db.Sequelize.Op.between]: [startDate, endDate],
+        },
+      },
+      attributes: ["working_hours"],
+      raw: true,
+    });
+
+    return submissions.reduce(
+      (sum, submission) =>
+        sum + (submission.working_hours === "half_day" ? 0.5 : 1),
+      0
+    );
+  };
+
+  const firstCycleExtraWork = await getCycleExtraWork(firstCycleStart, firstCycleEnd);
+  const secondCycleExtraWork = await getCycleExtraWork(secondCycleStart, secondCycleEnd);
+
   res.status(200).json({
     status: true,
     message: "Leaves fetched successfully",
@@ -207,6 +237,7 @@ const getAllLeave = catchAsync(async (req, res, next) => {
         used: aggregateStats.firstCycle.used,
         remaining: aggregateStats.firstCycle.remaining,
         deduction: aggregateStats.firstCycle.deduction,
+        extra_work: firstCycleExtraWork,
       },
       second_cycle_leave_summary: {
         year: cycleInfo.year,
@@ -218,6 +249,7 @@ const getAllLeave = catchAsync(async (req, res, next) => {
         used: aggregateStats.secondCycle.used,
         remaining: aggregateStats.secondCycle.remaining,
         deduction: aggregateStats.secondCycle.deduction,
+        extra_work: secondCycleExtraWork,
       },
       leaves: cycleLeaves,
       total_approved: aggregateStats.currentCycle.availed,
