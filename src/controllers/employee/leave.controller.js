@@ -362,6 +362,26 @@ const createLeaveRequest = catchAsync(async (req, res, next) => {
     );
   }
 
+  // Step 3: Prevent employees from applying for first-cycle policy leave during second cycle.
+  const currentCycleInfo = getCurrentCycleInfo();
+  const firstCycleStart = new Date(currentCycleInfo.year, 0, 1);
+  const firstCycleEnd = new Date(currentCycleInfo.year, 5, 30, 23, 59, 59, 999);
+
+  if (
+    currentCycleInfo.cycle === "second" &&
+    !isFloatingLeave &&
+    !isExtraWorkLeave &&
+    end >= firstCycleStart &&
+    start <= firstCycleEnd
+  ) {
+    return next(
+      new AppError(
+        "Employees cannot apply for First Cycle leave while the Second Cycle is active.",
+        STATUS_CODE.BAD_REQUEST
+      )
+    );
+  }
+
   // cant apply leave on same date if already applied check from db
 
   const leaveAppliedAlready = await leaveRequestRepos.findOne({
