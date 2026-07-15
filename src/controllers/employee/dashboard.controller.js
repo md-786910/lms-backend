@@ -11,7 +11,10 @@ const dayjs = require("dayjs");
 const utc = require("dayjs/plugin/utc");
 const timezone = require("dayjs/plugin/timezone");
 const { getMonthRange } = require("../../config/appConfig");
-const sequelize = require("sequelize");
+const {
+  buildAggregateLeaveStats,
+  getYearRangeWhere,
+} = require("../../utils/leaveCarryForward");
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
@@ -101,61 +104,53 @@ const dashboard = catchAsync(async (req, res, next) => {
     order: [["createdAt", "DESC"]],
   });
 
-  // Total leave employee - prev month and next month
-  const range1 = getMonthRange("previous");
-  const previous_month_leaves = await leaveRequestRepos.findAll({
-    where: {
-      company_id,
-      employee_id: id,
-      status: "approved",
-      start_date: {
-        [Op.gte]: range1?.startDate,
-        [Op.lt]: range1?.endDate,
-      },
-    },
-    attributes: [
-      "employee_id",
-      [sequelize.fn("SUM", sequelize.col("total_days")), "total_leave"],
-    ],
-    include: [
-      {
-        model: employeeRepos,
-        as: "employee",
-        attributes: ["first_name", "last_name", "email"],
-      },
-    ],
-    group: ["employee_id", "employee.id"],
-    order: [[sequelize.literal("total_leave"), "DESC"]],
-    raw: false,
+  // Total leave and deduction for the current and previous month.
+  // Calculate these from the yearly policy data so the dashboard uses the
+  // same carry-forward/deduction rules as the leave summaries.
+  const employee = await employeeRepos.findOne({
+    where: { id, company_id },
+    attributes: ["first_name", "last_name", "email"],
   });
 
-  // current month
-  const range2 = getMonthRange("current");
-  const current_month_leaves = await leaveRequestRepos.findAll({
-    where: {
-      company_id,
+  const getMonthlyLeaveSnapshot = async (range) => {
+    const approvedRequests = await leaveRequestRepos.findAll({
+      where: {
+        company_id,
+        employee_id: id,
+        status: "approved",
+        request_type: "policy",
+        ...getYearRangeWhere(range.year),
+      },
+    });
+    const stats = buildAggregateLeaveStats({
       employee_id: id,
-      status: "approved",
-      start_date: {
-        [Op.gte]: range2?.startDate,
-        [Op.lt]: range2?.endDate,
-      },
-    },
-    attributes: [
-      "employee_id",
-      [sequelize.fn("SUM", sequelize.col("total_days")), "total_leave"],
-    ],
-    include: [
+      employeeLeaves: leave,
+      leaveRequests: approvedRequests,
+      year: range.year,
+    });
+    const month = stats.monthResults[range.monthIndex];
+
+    if (!month || (month.availed <= 0 && month.deduction <= 0)) {
+      return [];
+    }
+
+    return [
       {
-        model: employeeRepos,
-        as: "employee",
-        attributes: ["first_name", "last_name", "email"],
+        employee_id: id,
+        employee,
+        total_leave: month.availed,
+        leave_availed: month.availed,
+        leave_deduction: month.deduction,
       },
-    ],
-    group: ["employee_id", "employee.id"],
-    order: [[sequelize.literal("total_leave"), "DESC"]],
-    raw: false,
-  });
+    ];
+  };
+
+  const previous_month_leaves = await getMonthlyLeaveSnapshot(
+    getMonthRange("previous")
+  );
+  const current_month_leaves = await getMonthlyLeaveSnapshot(
+    getMonthRange("current")
+  );
 
   res.status(200).json({
     status: true,
